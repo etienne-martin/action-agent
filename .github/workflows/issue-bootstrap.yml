@@ -101,7 +101,7 @@ jobs:
 
           mkdir -p "$HOME/.codex"
 
-          codex login --api-key "$OPENAI_API_KEY"
+          printenv OPENAI_API_KEY | codex login --with-api-key
 
           session_dir="$HOME/.codex/sessions"
           mkdir -p "$session_dir"
