@@ -299,7 +299,7 @@ jobs:
           prompt_file="${{ steps.prompt.outputs.prompt_file }}"
 
           set +e
-          codex_args=(--sandbox workspace-write --ask-for-approval never)
+          codex_args=(--sandbox workspace-write -c "approval_policy=\"never\"")
           if [ -n "$MODEL" ]; then
             codex_args+=(--model "$MODEL")
           fi
