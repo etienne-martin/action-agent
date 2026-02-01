@@ -214,9 +214,9 @@ jobs:
               exit 0
             fi
 
-            printf '%s' "$(cat "$prompt_file")" | codex exec "${codex_args[@]}" resume --last - 2>&1 | tee /tmp/codex_output.txt
+            printf '%s' "$(cat "$prompt_file")" | codex exec "${codex_args[@]}" --json resume --last - 2>&1 | tee /tmp/codex_output.txt
           else
-            codex exec "${codex_args[@]}" "$(cat "$prompt_file")" 2>&1 | tee /tmp/codex_output.txt
+            codex exec "${codex_args[@]}" --json "$(cat "$prompt_file")" 2>&1 | tee /tmp/codex_output.txt
           fi
           codex_exit=${PIPESTATUS[0]}
           set -e
@@ -237,12 +237,33 @@ jobs:
             exit 0
           fi
 
-          awk '
-            /^codex$/ {capture=1; buf=""; next}
-            /^tokens used/ {capture=0; next}
-            capture {buf = buf $0 ORS}
-            END {printf "%s", buf}
-          ' "$output_file" > "$response_file"
+          if ! python - <<'PY'
+import json
+from pathlib import Path
+
+output_path = Path("/tmp/codex_output.txt")
+response_path = Path("/tmp/codex_response.txt")
+
+response = ""
+with output_path.open("r", encoding="utf-8") as handle:
+    for line in handle:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            raise SystemExit(1)
+        if event.get("type") == "item.completed":
+            item = event.get("item") or {}
+            if item.get("type") == "agent_message":
+                response = item.get("text") or ""
+
+response_path.write_text(response, encoding="utf-8")
+PY
+          then
+            cp "$output_file" "$response_file"
+          fi
 
           if [ ! -s "$response_file" ]; then
             cp "$output_file" "$response_file"
