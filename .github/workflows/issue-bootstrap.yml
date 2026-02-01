@@ -42,7 +42,7 @@ jobs:
           node-version: "20"
 
       - name: Install Codex CLI
-        run: npm install -g @openai/codex@0.28.0
+        run: npm install -g @openai/codex@0.93.0
 
       - name: Resolve session id
         id: session
@@ -142,7 +142,7 @@ jobs:
             echo "session_id=" >> "$GITHUB_OUTPUT"
             echo "codex_exit=2" >> "$GITHUB_OUTPUT"
             echo "Session id not found in Codex output." > /tmp/codex_output.txt
-            exit 0
+            exit 1
           fi
 
           echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
