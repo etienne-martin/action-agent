@@ -44,6 +44,12 @@ jobs:
       - name: Install Codex CLI
         run: npm install -g @openai/codex@0.93.0
 
+      - name: Prepare Codex directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.codex/sessions"
+
       - name: Resolve session id
         id: session
         if: ${{ inputs.comment_body != '' }}
@@ -66,20 +72,59 @@ jobs:
           fi
           echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
 
-      - name: Guard missing session id
-        id: guard
-        if: ${{ inputs.comment_body != '' && steps.session.outputs.missing_session == 'true' }}
+      - name: Download session artifact
+        id: download_session
+        if: ${{ inputs.comment_body != '' && steps.session.outputs.missing_session == 'false' }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: codex-worker-session-${{ inputs.issue_number }}
+          path: ${{ runner.temp }}/codex-session
+
+      - name: Restore session artifact
+        id: restore
+        if: ${{ inputs.comment_body != '' }}
         shell: bash
         run: |
           set -euo pipefail
 
-          echo "No session id found on issue; cannot resume. Start from the issue body or fix the marker." > /tmp/codex_output.txt
-          echo "session_id=" >> "$GITHUB_OUTPUT"
-          echo "codex_exit=1" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.session.outputs.missing_session }}" = "true" ]; then
+            echo "missing_session=true" >> "$GITHUB_OUTPUT"
+            echo "No session id found on issue; cannot resume. Start from the issue body or fix the marker." > /tmp/codex_output.txt
+            echo "codex_exit=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ steps.download_session.outcome }}" != "success" ]; then
+            echo "missing_session=true" >> "$GITHUB_OUTPUT"
+            echo "Session artifact not found; cannot resume." > /tmp/codex_output.txt
+            echo "codex_exit=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          session_id="${{ steps.session.outputs.session_id }}"
+          src="${{ runner.temp }}/codex-session"
+          if [ -d "$src/$session_id" ]; then
+            src="$src/$session_id"
+          fi
+
+          if [ ! -d "$src" ]; then
+            echo "missing_session=true" >> "$GITHUB_OUTPUT"
+            echo "Session artifact missing contents; cannot resume." > /tmp/codex_output.txt
+            echo "codex_exit=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          dest="$HOME/.codex/sessions/$session_id"
+          mkdir -p "$dest"
+          cp -a "$src/." "$dest/"
+
+          echo "missing_session=false" >> "$GITHUB_OUTPUT"
+          echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
 
       - name: Run Codex
         id: codex
-        if: ${{ !(inputs.comment_body != '' && steps.session.outputs.missing_session == 'true') }}
+        if: ${{ !(inputs.comment_body != '' && steps.restore.outputs.missing_session == 'true') }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ISSUE_TITLE: ${{ inputs.issue_title }}
@@ -87,7 +132,7 @@ jobs:
           COMMENT_BODY: ${{ inputs.comment_body }}
           MODEL: ${{ inputs.model }}
           REASONING_EFFORT: ${{ inputs.reasoning_effort }}
-          SESSION_ID: ${{ steps.session.outputs.session_id }}
+          SESSION_ID: ${{ steps.restore.outputs.session_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -153,13 +198,23 @@ jobs:
 
           echo "codex_exit=$codex_exit" >> "$GITHUB_OUTPUT"
 
+      - name: Upload session artifact
+        if: ${{ steps.codex.outputs.session_id != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-worker-session-${{ inputs.issue_number }}
+          path: $HOME/.codex/sessions/${{ steps.codex.outputs.session_id }}
+          retention-days: 7
+          overwrite: true
+          if-no-files-found: error
+
       - name: Comment on issue
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
-          SESSION_ID: ${{ steps.guard.outputs.session_id }}
-          CODEX_EXIT: ${{ steps.guard.outputs.codex_exit }}
+          SESSION_ID: ${{ steps.restore.outputs.session_id }}
+          CODEX_EXIT: ${{ steps.restore.outputs.codex_exit }}
           CODEX_SESSION_ID: ${{ steps.codex.outputs.session_id }}
           CODEX_CODEX_EXIT: ${{ steps.codex.outputs.codex_exit }}
         shell: bash
