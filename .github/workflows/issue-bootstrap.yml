@@ -32,6 +32,8 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      CODEX_HOME: ${{ runner.temp }}/codex-home
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -48,7 +50,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.codex/sessions"
+          mkdir -p "$CODEX_HOME/.codex/sessions"
 
       - name: Download session artifact
         id: download_session
@@ -85,7 +87,7 @@ jobs:
             exit 0
           fi
 
-          dest="$HOME/.codex/sessions"
+          dest="$CODEX_HOME/.codex/sessions"
           mkdir -p "$dest"
           cp -a "$src/." "$dest/"
 
@@ -101,6 +103,7 @@ jobs:
           COMMENT_BODY: ${{ inputs.comment_body }}
           MODEL: ${{ inputs.model }}
           REASONING_EFFORT: ${{ inputs.reasoning_effort }}
+          HOME: ${{ env.CODEX_HOME }}
         shell: bash
         run: |
           set -euo pipefail
@@ -156,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: codex-worker-session-${{ inputs.issue_number }}
-          path: ${{ env.HOME }}/.codex/sessions
+          path: ${{ env.CODEX_HOME }}/.codex/sessions
           retention-days: 7
           overwrite: true
           if-no-files-found: error
