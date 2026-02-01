@@ -127,9 +127,9 @@ jobs:
           fi
 
           if [ -n "$session_id" ]; then
-            codex exec "${codex_args[@]}" resume "$session_id" "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
+            codex exec "${codex_args[@]}" resume "$session_id" "$(cat "$prompt_file")" 2>&1 | tee /tmp/codex_output.txt
           else
-            codex exec "${codex_args[@]}" "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
+            codex exec "${codex_args[@]}" "$(cat "$prompt_file")" 2>&1 | tee /tmp/codex_output.txt
           fi
           codex_exit=${PIPESTATUS[0]}
           set -e
