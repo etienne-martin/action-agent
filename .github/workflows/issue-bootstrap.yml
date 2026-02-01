@@ -25,8 +25,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: ${{ inputs.comment_id != '' && format('comment-{0}', inputs.comment_id) || format('issue-{0}', inputs.issue_number) }}
-  cancel-in-progress: true
+  group: ${{ format('issue-{0}', inputs.issue_number) }}
+  cancel-in-progress: false
 
 jobs:
   run:
@@ -71,9 +71,37 @@ jobs:
           printenv OPENAI_API_KEY | codex login --with-api-key
           echo "missing_auth=false" >> "$GITHUB_OUTPUT"
 
+      - name: Check edit freshness
+        id: edit_fresh
+        if: ${{ github.event.action == 'edited' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          stale=false
+
+          if [ -n "${{ inputs.comment_id }}" ]; then
+            current_updated_at=$(gh api "repos/${{ github.repository }}/issues/comments/${{ inputs.comment_id }}" --jq '.updated_at // ""')
+            event_updated_at="${{ github.event.comment.updated_at }}"
+          else
+            current_updated_at=$(gh api "repos/${{ github.repository }}/issues/${{ inputs.issue_number }}" --jq '.updated_at // ""')
+            event_updated_at="${{ github.event.issue.updated_at }}"
+          fi
+
+          if [ -n "$event_updated_at" ] && [ "$current_updated_at" != "$event_updated_at" ]; then
+            stale=true
+          fi
+
+          echo "stale=$stale" >> "$GITHUB_OUTPUT"
+          if [ "$stale" = true ]; then
+            echo "Edit superseded; skipping stale run." > /tmp/codex_output.txt
+          fi
+
       - name: Find session artifact
         id: find_artifact
-        if: ${{ inputs.comment_id != '' || github.event.action == 'edited' }}
+        if: ${{ (inputs.comment_id != '' || github.event.action == 'edited') && steps.edit_fresh.outputs.stale != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -103,7 +131,7 @@ jobs:
 
       - name: Download session artifact
         id: download_session
-        if: ${{ (inputs.comment_id != '' || github.event.action == 'edited') && steps.find_artifact.outputs.missing_session == 'false' }}
+        if: ${{ (inputs.comment_id != '' || github.event.action == 'edited') && steps.find_artifact.outputs.missing_session == 'false' && steps.edit_fresh.outputs.stale != 'true' }}
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -115,7 +143,7 @@ jobs:
 
       - name: Restore session artifact
         id: restore
-        if: ${{ inputs.comment_id != '' || github.event.action == 'edited' }}
+        if: ${{ (inputs.comment_id != '' || github.event.action == 'edited') && steps.edit_fresh.outputs.stale != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -200,7 +228,7 @@ jobs:
 
       - name: Prepare prompt
         id: prompt
-        if: ${{ steps.login.outputs.missing_auth != 'true' && !((inputs.comment_id != '' || github.event.action == 'edited') && steps.restore.outputs.missing_session == 'true') }}
+        if: ${{ steps.login.outputs.missing_auth != 'true' && !((inputs.comment_id != '' || github.event.action == 'edited') && steps.restore.outputs.missing_session == 'true') && steps.edit_fresh.outputs.stale != 'true' }}
         env:
           ISSUE_TITLE: ${{ steps.issue_data.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.issue_data.outputs.issue_body }}
@@ -240,7 +268,7 @@ jobs:
 
       - name: Run Codex
         id: codex
-        if: ${{ steps.login.outputs.missing_auth != 'true' && !((inputs.comment_id != '' || github.event.action == 'edited') && steps.restore.outputs.missing_session == 'true') && steps.prompt.outputs.prompt_ready == 'true' }}
+        if: ${{ steps.login.outputs.missing_auth != 'true' && !((inputs.comment_id != '' || github.event.action == 'edited') && steps.restore.outputs.missing_session == 'true') && steps.prompt.outputs.prompt_ready == 'true' && steps.edit_fresh.outputs.stale != 'true' }}
         env:
           ISSUE_TITLE: ${{ steps.issue_data.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.issue_data.outputs.issue_body }}
@@ -340,7 +368,7 @@ jobs:
           include-hidden-files: true
 
       - name: Comment on issue
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.edit_fresh.outputs.stale != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
