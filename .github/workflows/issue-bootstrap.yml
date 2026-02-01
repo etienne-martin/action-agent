@@ -52,7 +52,6 @@ jobs:
           codex_home="$RUNNER_TEMP/codex-home"
           mkdir -p "$codex_home"
           echo "CODEX_HOME=$codex_home" >> "$GITHUB_ENV"
-          echo "CODEX_STATE_DIR=$codex_home" >> "$GITHUB_ENV"
           echo "CODEX_SESSIONS_PATH=$codex_home/sessions" >> "$GITHUB_ENV"
 
       - name: Codex login
@@ -148,14 +147,8 @@ jobs:
             exit 0
           fi
 
-          dest="$CODEX_STATE_DIR"
-          if [ ! -d "$src/sessions" ] && [ ! -f "$src/history.jsonl" ] && [ ! -f "$src/config.toml" ]; then
-            dest="$CODEX_SESSIONS_PATH"
-          fi
-
-          mkdir -p "$CODEX_STATE_DIR"
-          mkdir -p "$dest"
-          cp -a "$src/." "$dest/"
+          mkdir -p "$CODEX_SESSIONS_PATH"
+          cp -a "$src/." "$CODEX_SESSIONS_PATH/"
 
           echo "missing_session=false" >> "$GITHUB_OUTPUT"
 
@@ -195,21 +188,20 @@ jobs:
           fi
 
           if [ -n "$COMMENT_BODY" ]; then
-            session_id_file="$CODEX_STATE_DIR/session_id.txt"
-            if [ ! -f "$session_id_file" ]; then
-              echo "Session id file missing; cannot resume." > /tmp/codex_output.txt
+            if [ ! -d "$CODEX_SESSIONS_PATH" ]; then
+              echo "Session files missing; cannot resume." > /tmp/codex_output.txt
               echo "codex_exit=1" >> "$GITHUB_OUTPUT"
               exit 0
             fi
 
-            session_id="$(cat "$session_id_file")"
-            if [ -z "$session_id" ]; then
-              echo "Session id file empty; cannot resume." > /tmp/codex_output.txt
+            session_files=$(find "$CODEX_SESSIONS_PATH" -type f -name "*.jsonl" | head -n 1 || true)
+            if [ -z "$session_files" ]; then
+              echo "Session files missing; cannot resume." > /tmp/codex_output.txt
               echo "codex_exit=1" >> "$GITHUB_OUTPUT"
               exit 0
             fi
 
-            printf '%s' "$(cat "$prompt_file")" | codex exec "${codex_args[@]}" resume "$session_id" - 2>&1 | tee /tmp/codex_output.txt
+            printf '%s' "$(cat "$prompt_file")" | codex exec "${codex_args[@]}" resume --last - 2>&1 | tee /tmp/codex_output.txt
           else
             codex exec "${codex_args[@]}" "$(cat "$prompt_file")" 2>&1 | tee /tmp/codex_output.txt
           fi
@@ -218,39 +210,12 @@ jobs:
 
           echo "codex_exit=$codex_exit" >> "$GITHUB_OUTPUT"
 
-      - name: Store session id
-        if: ${{ steps.codex.outcome == 'success' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ ! -d "$CODEX_SESSIONS_PATH" ]; then
-            exit 0
-          fi
-
-          latest_session=$(find "$CODEX_SESSIONS_PATH" -type f -name "*.jsonl" | sort | tail -n 1 || true)
-          if [ -z "$latest_session" ] || [ ! -f "$latest_session" ]; then
-            exit 0
-          fi
-
-          session_id=$(python -c $'import json,sys\npath=sys.argv[1]\nwith open(path, \"r\", encoding=\"utf-8\") as handle:\n    for line in handle:\n        data=json.loads(line)\n        if data.get(\"type\")==\"session_meta\":\n            print(data[\"payload\"][\"id\"])\n            raise SystemExit(0)\nraise SystemExit(1)\n' "$latest_session")
-          if [ -n "$session_id" ]; then
-            echo "$session_id" > "$CODEX_STATE_DIR/session_id.txt"
-          fi
-
-      - name: Strip Codex auth
-        if: ${{ steps.codex.outcome == 'success' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f "$CODEX_STATE_DIR/auth.json"
-
       - name: Upload session artifact
         if: ${{ steps.codex.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: codex-worker-session-${{ inputs.issue_number }}
-          path: ${{ env.CODEX_STATE_DIR }}
+          path: ${{ env.CODEX_SESSIONS_PATH }}
           retention-days: 7
           overwrite: true
           if-no-files-found: error
