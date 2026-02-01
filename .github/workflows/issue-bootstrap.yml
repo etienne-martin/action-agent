@@ -45,11 +45,14 @@ jobs:
       - name: Install Codex CLI
         run: npm install -g @openai/codex@0.93.0
 
-      - name: Set Codex sessions path
+      - name: Set Codex paths
         shell: bash
         run: |
           set -euo pipefail
-          echo "CODEX_SESSIONS_PATH=$HOME/.codex/sessions" >> "$GITHUB_ENV"
+          codex_home="$RUNNER_TEMP/codex-home"
+          echo "CODEX_HOME=$codex_home" >> "$GITHUB_ENV"
+          echo "CODEX_STATE_DIR=$codex_home/.codex" >> "$GITHUB_ENV"
+          echo "CODEX_SESSIONS_PATH=$codex_home/.codex/sessions" >> "$GITHUB_ENV"
 
       - name: Find session artifact
         id: find_artifact
@@ -115,7 +118,7 @@ jobs:
           fi
 
           src="${{ runner.temp }}/codex-session"
-          if [ -d "$src/sessions" ]; then
+          if [ -d "$src/sessions" ] && [ ! -f "$src/history.jsonl" ]; then
             src="$src/sessions"
           fi
 
@@ -126,7 +129,7 @@ jobs:
             exit 0
           fi
 
-          dest="$CODEX_SESSIONS_PATH"
+          dest="$CODEX_STATE_DIR"
           mkdir -p "$dest"
           cp -a "$src/." "$dest/"
 
@@ -142,6 +145,7 @@ jobs:
           COMMENT_BODY: ${{ inputs.comment_body }}
           MODEL: ${{ inputs.model }}
           REASONING_EFFORT: ${{ inputs.reasoning_effort }}
+          HOME: ${{ env.CODEX_HOME }}
         shell: bash
         run: |
           set -euo pipefail
@@ -187,15 +191,23 @@ jobs:
 
           echo "codex_exit=$codex_exit" >> "$GITHUB_OUTPUT"
 
+      - name: Strip Codex auth
+        if: ${{ steps.codex.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f "$CODEX_STATE_DIR/auth.json"
+
       - name: Upload session artifact
         if: ${{ steps.codex.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: codex-worker-session-${{ inputs.issue_number }}
-          path: ${{ env.CODEX_SESSIONS_PATH }}
+          path: ${{ env.CODEX_STATE_DIR }}
           retention-days: 7
           overwrite: true
           if-no-files-found: error
+          include-hidden-files: true
 
       - name: Comment on issue
         if: always()
