@@ -54,6 +54,24 @@ jobs:
           echo "CODEX_STATE_DIR=$codex_home/.codex" >> "$GITHUB_ENV"
           echo "CODEX_SESSIONS_PATH=$codex_home/.codex/sessions" >> "$GITHUB_ENV"
 
+      - name: Codex login
+        id: login
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "missing_auth=true" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY is missing. Add it as a repo/org secret." > /tmp/codex_output.txt
+            echo "codex_exit=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          printenv OPENAI_API_KEY | codex login --with-api-key
+          echo "missing_auth=false" >> "$GITHUB_OUTPUT"
+
       - name: Find session artifact
         id: find_artifact
         if: ${{ inputs.comment_body != '' }}
@@ -137,9 +155,8 @@ jobs:
 
       - name: Run Codex
         id: codex
-        if: ${{ !(inputs.comment_body != '' && steps.restore.outputs.missing_session == 'true') }}
+        if: ${{ steps.login.outputs.missing_auth != 'true' && !(inputs.comment_body != '' && steps.restore.outputs.missing_session == 'true') }}
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ISSUE_TITLE: ${{ inputs.issue_title }}
           ISSUE_BODY: ${{ inputs.issue_body }}
           COMMENT_BODY: ${{ inputs.comment_body }}
@@ -149,15 +166,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "OPENAI_API_KEY is missing. Add it as a repo/org secret." > /tmp/codex_output.txt
-            echo "session_id=" >> "$GITHUB_OUTPUT"
-            echo "codex_exit=1" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          printenv OPENAI_API_KEY | codex login --with-api-key
 
           prompt_file=$(mktemp)
           if [ -n "$COMMENT_BODY" ]; then
@@ -215,13 +223,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
           FIND_CODEX_EXIT: ${{ steps.find_artifact.outputs.codex_exit }}
+          LOGIN_CODEX_EXIT: ${{ steps.login.outputs.codex_exit }}
           CODEX_EXIT: ${{ steps.restore.outputs.codex_exit }}
           CODEX_CODEX_EXIT: ${{ steps.codex.outputs.codex_exit }}
         shell: bash
         run: |
           set -euo pipefail
 
-          codex_exit="${CODEX_EXIT:-${FIND_CODEX_EXIT:-$CODEX_CODEX_EXIT}}"
+          codex_exit="${CODEX_EXIT:-${FIND_CODEX_EXIT:-${LOGIN_CODEX_EXIT:-$CODEX_CODEX_EXIT}}}"
 
           status="success"
           if [ -n "$codex_exit" ] && [ "$codex_exit" -ne 0 ]; then
