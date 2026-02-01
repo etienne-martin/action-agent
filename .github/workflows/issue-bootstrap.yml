@@ -133,14 +133,17 @@ jobs:
           fi
           codex_exit=${PIPESTATUS[0]}
           set -e
+
+          if [ -z "$session_id" ]; then
+            session_id=$(grep -Eo 'session id: [0-9a-fA-F-]{36}' /tmp/codex_output.txt | tail -n 1 | awk '{print $3}')
+          fi
+          if [ -z "$session_id" ]; then
+            session_id=$(grep -Eo '[0-9a-fA-F-]{36}' /tmp/codex_output.txt | head -n 1)
+          fi
+
           echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
 
           echo "codex_exit=$codex_exit" >> "$GITHUB_OUTPUT"
-
-      - name: Extract session id
-        id: extract
-        if: ${{ steps.codex.outputs.session_id == '' && !(inputs.comment_body != '' && steps.session.outputs.missing_session == 'true') }}
-        uses: ./.github/actions/extract-session-id
 
       - name: Comment on issue
         if: always()
@@ -151,15 +154,11 @@ jobs:
           CODEX_EXIT: ${{ steps.guard.outputs.codex_exit }}
           CODEX_SESSION_ID: ${{ steps.codex.outputs.session_id }}
           CODEX_CODEX_EXIT: ${{ steps.codex.outputs.codex_exit }}
-          EXTRACT_SESSION_ID: ${{ steps.extract.outputs.session_id }}
         shell: bash
         run: |
           set -euo pipefail
 
           session_id="${SESSION_ID:-$CODEX_SESSION_ID}"
-          if [ -z "$session_id" ]; then
-            session_id="$EXTRACT_SESSION_ID"
-          fi
           codex_exit="${CODEX_EXIT:-$CODEX_CODEX_EXIT}"
 
           status="success"
