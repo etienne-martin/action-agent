@@ -15,6 +15,14 @@ on:
       comment_body:
         type: string
         required: false
+      model:
+        type: string
+        required: false
+        default: gpt-5-codex-mini
+      reasoning_effort:
+        type: string
+        required: false
+        default: low
     secrets:
       OPENAI_API_KEY:
         required: true
@@ -45,6 +53,8 @@ jobs:
           ISSUE_TITLE: ${{ inputs.issue_title }}
           ISSUE_BODY: ${{ inputs.issue_body }}
           COMMENT_BODY: ${{ inputs.comment_body }}
+          MODEL: ${{ inputs.model }}
+          REASONING_EFFORT: ${{ inputs.reasoning_effort }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -84,9 +94,9 @@ jobs:
 
           set +e
           if [ -n "$session_id" ]; then
-            codex exec resume "$session_id" "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
+            codex exec --model "$MODEL" -c model_reasoning_effort="$REASONING_EFFORT" resume "$session_id" "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
           else
-            codex exec "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
+            codex exec --model "$MODEL" -c model_reasoning_effort="$REASONING_EFFORT" "$(cat "$prompt_file")" | tee /tmp/codex_output.txt
           fi
           codex_exit=${PIPESTATUS[0]}
           set -e
