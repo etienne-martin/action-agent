@@ -52,8 +52,8 @@ jobs:
           codex_home="$RUNNER_TEMP/codex-home"
           mkdir -p "$codex_home"
           echo "CODEX_HOME=$codex_home" >> "$GITHUB_ENV"
-          echo "CODEX_STATE_DIR=$codex_home/.codex" >> "$GITHUB_ENV"
-          echo "CODEX_SESSIONS_PATH=$codex_home/.codex/sessions" >> "$GITHUB_ENV"
+          echo "CODEX_STATE_DIR=$codex_home" >> "$GITHUB_ENV"
+          echo "CODEX_SESSIONS_PATH=$codex_home/sessions" >> "$GITHUB_ENV"
 
       - name: Codex login
         id: login
@@ -168,7 +168,6 @@ jobs:
           COMMENT_BODY: ${{ inputs.comment_body }}
           MODEL: ${{ inputs.model }}
           REASONING_EFFORT: ${{ inputs.reasoning_effort }}
-          HOME: ${{ env.CODEX_HOME }}
         shell: bash
         run: |
           set -euo pipefail
