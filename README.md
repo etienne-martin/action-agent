@@ -21,7 +21,7 @@ Yes. GitHub Actions can host Codex CLI runs, trigger them manually or from PR co
 ### 2b) Issue comment-driven loop (thread on issue)
 
 - **Need**: Back-and-forth on the issue before a PR exists.
-- **Implement**: Use `issue_comment` without the PR guard for issue threads. Persist the Codex session id on the issue (label or hidden marker comment) and read it on each follow-up.
+- **Implement**: Use `issue_comment` without the PR guard for issue threads. Restore the latest Codex state from the per-issue artifact and resume with `codex exec resume --last -` for follow-ups. Fail if no artifact exists.
 - **Refs**: `issue_comment` docs.
 
 ### 3) Worker lives in separate repo
@@ -34,12 +34,11 @@ Yes. GitHub Actions can host Codex CLI runs, trigger them manually or from PR co
 ### 4) Persist Codex context between runs
 
 - **Need**: Continue the agent session after a comment.
-- **Implement**: Use explicit session ids + per-thread artifacts:
-  - Codex stores transcripts locally; session ids are available in the picker, `/status`, or under `~/.codex/sessions/`.
-  - Do not rely on `--last` when runs can overlap; always pass a specific session id.
-  - Source of truth is the Codex session id created by the initial run; capture it after the run from `~/.codex/sessions/` (or `/status` in TUI) and persist it alongside the artifact.
-  - Each thread (initial prompt) has its own session id and its own artifact; never reuse an artifact across threads or branches.
-  - Only persist the current session + its artifacts in the uploaded bundle (no other sessions).
+- **Implement**: Single-session-per-issue + per-issue artifacts:
+  - Persist the full Codex state directory (`CODEX_HOME`) as the artifact, but strip `auth.json`.
+  - On follow-ups, restore the artifact, then run `codex exec resume --last -` (stdin prompt).
+  - Fail if no artifact exists on a follow-up comment (do not silently start a new session).
+  - Overwrite the artifact on each run so only the current thread state is kept.
 - **Refs**: Codex CLI features + Codex CLI reference + GitHub artifacts docs.
 
 ### 5) Secrets + auth for Codex
@@ -51,7 +50,7 @@ Yes. GitHub Actions can host Codex CLI runs, trigger them manually or from PR co
 ### 6) Concurrency + queuing
 
 - **Need**: Controlled ordering with multiple runs possible.
-- **Implement**: Use `concurrency` to limit parallelism per session id, not globally. Always route a comment to its matching session id to avoid `--last`. Use per-thread artifacts so runs in different threads never share state. You still need a queue/drain strategy in the workflow logic.
+- **Implement**: Use `concurrency` to limit parallelism per issue so `resume --last` is safe. Use per-issue artifacts so runs in different issues never share state. You still need a queue/drain strategy in the workflow logic.
 - **Refs**: Concurrency docs.
 
 ### 7) Cancellation feedback
@@ -68,14 +67,14 @@ Reusable workflow with these phases:
 
 1. Checkout target repo (using caller context).
 2. Restore the per-thread session artifact (only that session).
-3. Run Codex with the prompt and explicit session id:
-   - initial (bootstrap phase): run `codex exec "<prompt>"`, read the generated Codex session id from `~/.codex/sessions/`, and persist it on the issue (label or marker comment).
-   - follow-up (issue thread): read the session id from the issue and run `codex exec resume <session-id> "<comment>"`.
-   - follow-up (PR thread): read the session id persisted on the PR and run `codex exec resume <session-id> "<comment>"`.
+3. Run Codex with the prompt and restored state:
+   - initial (bootstrap phase): run `codex exec "<prompt>"`.
+   - follow-up (issue thread): restore `CODEX_HOME` from the per-issue artifact, then run `codex exec resume --last -` with the comment as stdin.
+   - follow-up (PR thread): same pattern but scoped to the PR thread artifact.
 4. If code changes are requested, create the session branch and commit/push once after the run finishes (see Branch + PR naming below).
 5. Post the agent response back on the issue (issue thread) or on the PR (PR thread).
 6. Upload updated per-thread `~/.codex` bundle as an artifact.
-7. When a PR is created from an issue, fork a new session id for the PR thread and persist it on the PR; comments move to the PR.
+7. When a PR is created from an issue, start a new thread + artifact for the PR; comments move to the PR.
 
 ### Target repo (thin wrappers)
 
@@ -87,8 +86,8 @@ Reusable workflow with these phases:
 ### Option A: Drain-in-one-run (simpler)
 
 - Each run:
-  1. Load the "last processed comment id" per session id from state.
-  2. Process all new issue or PR comments for that session id in order.
+  1. Load the "last processed comment id" per issue/PR from state.
+  2. Process all new issue or PR comments for that thread in order.
   3. Re-check once for new comments before exit.
 - Works with `concurrency` to ensure one active run, avoids reliance on run ordering.
 
@@ -105,7 +104,7 @@ Reusable workflow with these phases:
 - Reusable workflow permissions are inherited from the caller; they cannot be elevated in the worker repo.
 - Concurrency group ordering is not guaranteed; pending runs can be replaced.
 - Artifact retention is configurable with `retention-days` but capped by org/repo policy.
-- Use explicit session ids when multiple runs can overlap; avoid `--last`.
+- If using `resume --last`, enforce one active run per issue/PR thread via `concurrency`.
 - Persist one artifact per thread; do not share artifact bundles across branches or prompts.
 - Closing keywords in PR descriptions only auto-link/close issues when the PR targets the default branch.
 
@@ -113,25 +112,25 @@ Reusable workflow with these phases:
 
 1. Build worker repo with one reusable workflow.
 2. Add thin caller workflows in one target repo (issue bootstrap + comment-driven).
-3. Add artifact-based session persistence and explicit session ids.
+3. Add artifact-based session persistence with `CODEX_HOME` restore + `resume --last`.
 4. Add queue logic (Option A first, Option B later).
 
 ## Branch + PR naming
 
 - **Branch name**: include the issue number + short kebab-case prompt summary.
 - **Example**: `codex/issue-<issue-number>/<short-kebab-summary>`.
-- **Behavior**: only create a branch when code changes are needed. Commit and push once after the run finishes. The session id is captured from the issue for resume; it does not need to be in the branch name.
+- **Behavior**: only create a branch when code changes are needed. Commit and push once after the run finishes. No session id is needed in the branch name.
 - **PR**: create a PR at the end of the issue thread (non-draft), or only when explicitly requested. Include a closing keyword in the PR body, e.g. `Closes #<issue-number>`, so GitHub links and auto-closes the issue when merged.
 - **Issue link**: optionally link the branch to the issue via the issue sidebar (Development) or by creating the branch from the issue so it appears under Development.
 
 ## Thread isolation
 
-- **Definition**: a thread starts at the initial prompt and owns a single Codex session id.
-- **End condition**: the issue thread ends when a PR is created; the PR starts a new thread with its own session id.
-- **Artifact rule**: one artifact per thread; name it with the session id and restore only that artifact.
-- **State rule**: bundle only the current session and its artifacts; exclude other sessions to avoid cross-thread bleed.
-- **Issue rule**: persist the session id on the issue (label or hidden marker comment) so the thread can continue before a PR exists.
-- **PR rule**: when a PR is opened, fork a new session id and persist it on the PR; comments move to the PR thread.
+- **Definition**: a thread starts at the initial prompt and owns a single Codex session (implicit).
+- **End condition**: the issue thread ends when a PR is created; the PR starts a new thread with its own session.
+- **Artifact rule**: one artifact per thread; name it with the issue/PR number and restore only that artifact.
+- **State rule**: bundle the full `CODEX_HOME` (minus `auth.json`) so `resume --last` can work.
+- **Issue rule**: follow-ups require an existing artifact; otherwise fail to avoid silent new sessions.
+- **PR rule**: when a PR is opened, start a new thread + artifact; comments move to the PR thread.
 
 ## Artifact cleanup
 
