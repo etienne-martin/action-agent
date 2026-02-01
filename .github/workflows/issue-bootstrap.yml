@@ -57,7 +57,7 @@ jobs:
             exit 0
           fi
 
-          codex login --with-api-key "$OPENAI_API_KEY"
+          codex login --api-key "$OPENAI_API_KEY"
 
           session_dir="$HOME/.codex/sessions"
           mkdir -p "$session_dir"
