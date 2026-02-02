@@ -1,4 +1,4 @@
-# ActionAgent
+# Action Agent
 
 GitHub Action (Node) that runs Codex CLI from issues and issue comments.
 
@@ -31,7 +31,7 @@ GitHub Action (Node) that runs Codex CLI from issues and issue comments.
 Create a workflow in the target repo, e.g. `.github/workflows/action-agent-issue.yml`:
 
 ```yaml
-name: ActionAgent Issue
+name: Action Agent Issue
 
 on:
   issues:
@@ -60,8 +60,8 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Run ActionAgent
-        uses: etienne-martin/ActionAgent/.github/actions/action-agent@main
+      - name: Run Action Agent
+        uses: etienne-martin/action-agent/.github/actions/action-agent@main
         with:
           issue_number: ${{ github.event.issue.number }}
           comment_id: ${{ github.event.comment.id || '' }}

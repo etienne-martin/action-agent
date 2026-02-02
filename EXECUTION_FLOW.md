@@ -1,4 +1,4 @@
-# Execution flow (ActionAgent action)
+# Execution flow (Action Agent action)
 
 This describes the current runtime order in `/.github/actions/action-agent/src/index.js`.
 

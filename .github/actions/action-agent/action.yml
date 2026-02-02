@@ -1,4 +1,4 @@
-name: ActionAgent
+name: Action Agent
 
 description: Run Codex CLI for issue/issue_comment threads.
 

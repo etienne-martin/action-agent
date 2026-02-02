@@ -1,5 +1,5 @@
 {
-  "name": "action-agent-action",
+  "name": "action-agent",
   "private": true,
   "version": "0.0.0",
   "main": "dist/index.js",
