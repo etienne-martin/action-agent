@@ -61,7 +61,7 @@ jobs:
           node-version: "20"
 
       - name: Run action-agent
-        uses: etienne-martin/action-agent/.github/actions/action-agent@main
+        uses: etienne-martin/action-agent@main
         with:
           issue_number: ${{ github.event.issue.number }}
           comment_id: ${{ github.event.comment.id || '' }}
@@ -80,4 +80,4 @@ jobs:
 
 ## Files
 
-- `/.github/actions/action-agent/action.yml` — Node action entry point.
+- `/action.yml` — Node action entry point.

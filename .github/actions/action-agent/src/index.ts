@@ -62,8 +62,7 @@ const requireString = (value: unknown, label: string): string => {
 };
 
 const readPromptTemplate = (): string => {
-  const actionPath = process.env.GITHUB_ACTION_PATH || path.resolve(__dirname, '..');
-  const templatePath = path.join(actionPath, 'src', 'prompt-template.md');
+  const templatePath = path.resolve(__dirname, '../src/prompt-template.md');
   return readText(templatePath);
 };
 
