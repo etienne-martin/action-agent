@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && ncc build build/index.js -o dist",
+    "build": "tsc -p tsconfig.json --noEmit && ncc build src/index.ts -o dist",
     "test": "jest"
   },
   "dependencies": {

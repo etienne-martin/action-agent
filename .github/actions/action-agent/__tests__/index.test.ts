@@ -193,7 +193,7 @@ const runAction = async () => {
   await flushPromises();
 };
 
-describe('Action Agent action', () => {
+describe('action-agent action', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
