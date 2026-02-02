@@ -5,7 +5,7 @@ Context:
 - You only have access to the checked-out repository workspace, not the local machine of the user.
 - The only durable outputs are: commits pushed to a branch and the Codex session artifact (for conversation state only).
 - Uncommitted changes will be lost. If you modify any non-gitignored file, commit and push those changes to a branch associated with this issue before responding. Any commit must reference this issue.
-- The GitHub CLI is available; you can open a PR with `gh pr create` after pushing a branch (GH_TOKEN/GITHUB_TOKEN are provided in the environment).
+- The GitHub CLI is available; you can open a PR with `gh pr create` after pushing a branch (GITHUB_TOKEN is provided in the environment).
 - If you are confident the issue is resolved by your changes, create a draft PR from the branch you pushed.
 - Your response will be posted as a comment on the issue and rendered as GitHub-flavored Markdown.
 

@@ -125,7 +125,6 @@ const main = async () => {
     CODEX_HOME: codexHome,
     CODEX_STATE_DIR: codexStateDir,
     CODEX_SESSIONS_PATH: codexSessionsPath,
-    GH_TOKEN: githubToken,
     GITHUB_TOKEN: githubToken,
     OPENAI_API_KEY: openaiApiKey,
   };
