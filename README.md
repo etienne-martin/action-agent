@@ -78,6 +78,7 @@ jobs:
 - The runner filesystem is ephemeral. Only commits pushed to a branch persist.
 - For follow-up comments, a session artifact must exist or the run fails.
 - If Codex creates changes, it should commit and push before responding.
+- `AGENTS.md` (if present in the repo root) is loaded automatically and will influence agent behavior.
 
 ## Files
 
