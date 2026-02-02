@@ -23,9 +23,6 @@ GitHub Action (Node) that runs Codex CLI from issues and issue comments.
 - `pull-requests: write` — create draft PRs from branches.
 - `actions: read` — list/download artifacts for session restore.
 
-4) Runner requirements
-- Bash shell, `git`, `gh`, and `node` available.
-
 ## Quick start (caller workflow)
 
 Create a workflow in the target repo, e.g. `.github/workflows/action-agent-issue.yml`:
