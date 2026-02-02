@@ -218,18 +218,19 @@ const main = async () => {
         }
 
         if (codexExit === null) {
-          let source = downloadPath;
           const sessionsDir = path.join(downloadPath, 'sessions');
-          if (fs.existsSync(sessionsDir) && !fs.existsSync(path.join(downloadPath, 'history.jsonl'))) {
-            source = sessionsDir;
-          }
+          const source = downloadPath;
+          const target = fs.existsSync(sessionsDir)
+            ? codexStateDir
+            : path.join(codexStateDir, 'sessions');
+
           if (!fs.existsSync(source)) {
             codexExit = 1;
             createCodexOutput('Session artifact missing contents; cannot resume.');
           } else {
             fs.rmSync(codexStateDir, { recursive: true, force: true });
-            ensureDir(codexStateDir);
-            copyDir(source, codexStateDir);
+            ensureDir(target);
+            copyDir(source, target);
           }
         }
       }
