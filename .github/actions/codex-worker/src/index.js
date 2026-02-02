@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const artifact = require('@actions/artifact');
+const { DefaultArtifactClient } = require('@actions/artifact');
 const exec = require('@actions/exec');
 const fs = require('fs');
 const path = require('path');
@@ -208,16 +208,15 @@ const main = async () => {
         createCodexOutput('Session artifact not found; cannot resume.');
       } else {
         const latest = matches[matches.length - 1];
-        const artifactClient = artifact.create();
+        const artifactClient = new DefaultArtifactClient();
         const downloadPath = path.join(process.env.RUNNER_TEMP || '/tmp', 'codex-session');
         ensureDir(downloadPath);
 
         try {
-          await artifactClient.downloadArtifact(latest.name, {
+          await artifactClient.downloadArtifact(latest.id, {
             path: downloadPath,
             findBy: {
               token: githubToken,
-              workflowRunId: latest.workflow_run.id,
               repositoryOwner: owner,
               repositoryName: repo,
             },
@@ -351,7 +350,7 @@ const main = async () => {
     fs.rmSync(path.join(codexStateDir, 'tmp'), { recursive: true, force: true });
 
     if (codexExit === 0) {
-      const artifactClient = artifact.create();
+      const artifactClient = new DefaultArtifactClient();
       const artifactName = `codex-worker-session-${issueNumber}`;
       const files = listFiles(codexStateDir);
       if (!files.length) {
