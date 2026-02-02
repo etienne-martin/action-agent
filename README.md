@@ -75,6 +75,3 @@ jobs:
 - Session artifacts are handled automatically by the action; follow‑up comments resume from the latest saved session. Artifacts are retained for 7 days, so conversations expire after that retention window.
 - `AGENTS.md` (if present in the repo root) is loaded automatically and will influence agent behavior.
 
-## Files
-
-- `/action.yml` — Node action entry point.
