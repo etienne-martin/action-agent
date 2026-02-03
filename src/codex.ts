@@ -49,7 +49,7 @@ export const teardown = async (): Promise<void> => {
 };
 
 export const runCodex = async (prompt: string, githubToken: string): Promise<void> => {
-  await runCommand('codex', ['exec', 'resume', '--last', prompt], {
+  await runCommand('codex', ['exec', 'resume', '--last', '--sandbox', 'danger-full-access', prompt], {
     env: {
       ...Object.fromEntries(
         Object.entries(process.env).flatMap(([key, value]) => (value === undefined ? [] : [[key, value]])),
