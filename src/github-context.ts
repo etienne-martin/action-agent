@@ -1,4 +1,4 @@
-import { error } from '@actions/core';
+
 import { context } from '@actions/github';
 
 export const getIssueNumber = (): number => {
@@ -7,7 +7,5 @@ export const getIssueNumber = (): number => {
   if (issue?.number) return issue.number;
   if (pull_request?.number) return pull_request.number;
 
-  const message = 'Missing issue or pull request number in event payload.';
-  error(message);
-  throw new Error(message);
+  throw new Error('Missing issue or pull request number in event payload.');
 };

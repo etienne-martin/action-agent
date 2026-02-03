@@ -29985,8 +29985,8 @@ const buildCommandError = (command, args, stdout, stderr, exitCode) => {
     const trimmedStdout = stdout.trim();
     const trimmedStderr = stderr.trim();
     const details = [trimmedStdout, trimmedStderr].filter(Boolean).join('\n');
-    const base = `Command failed: \n${[command, ...args].join(' ')}`;
-    return details ? `${base}\n${details}` : `${base} (exit code ${exitCode})`;
+    const base = `Command failed: ${[command, ...args].join(' ')}`;
+    return details ? `${base}\n\n${details}` : `${base} (exit code ${exitCode})`;
 };
 const runCommand = async (command, args, options = {}) => {
     const result = await (0, exec_1.getExecOutput)(command, args, { ...options, ignoreReturnCode: true });
@@ -30006,7 +30006,6 @@ exports.runCommand = runCommand;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getIssueNumber = void 0;
-const core_1 = __nccwpck_require__(7484);
 const github_1 = __nccwpck_require__(3228);
 const getIssueNumber = () => {
     const { issue, pull_request } = github_1.context.payload;
@@ -30014,9 +30013,7 @@ const getIssueNumber = () => {
         return issue.number;
     if (pull_request?.number)
         return pull_request.number;
-    const message = 'Missing issue or pull request number in event payload.';
-    (0, core_1.error)(message);
-    throw new Error(message);
+    throw new Error('Missing issue or pull request number in event payload.');
 };
 exports.getIssueNumber = getIssueNumber;
 
@@ -31969,12 +31966,16 @@ const main = async () => {
     try {
         const { cliVersion, apiKey } = (0, input_1.readInputs)();
         await (0, codex_1.bootstrapCli)({ version: cliVersion, apiKey });
-        throw new Error("Some error");
     }
     catch (error) {
-        const message = `action-agent failed: ${error instanceof Error ? error.message : String(error)}`;
-        (0, core_1.setFailed)(message);
-        await (0, comment_1.postComment)(message);
+        const message = error instanceof Error ? error.message : String(error);
+        await (0, comment_1.postComment)(`
+action-agent failed:
+\`\`\`
+${message}
+\`\`\`
+    `);
+        (0, core_1.setFailed)(`action-agent failed: ${message}`);
     }
 };
 void main();
