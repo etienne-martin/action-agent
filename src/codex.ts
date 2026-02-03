@@ -8,7 +8,7 @@ const install = async (version = CODEX_VERSION): Promise<void> => {
 
 const login = async (apiKey: string): Promise<void> => {
   await runCommand('bash', ['-lc', 'printenv OPENAI_API_KEY | codex login --with-api-key'], {
-    env: { ...process.env, OPENAI_API_KEY: apiKey },
+    env: { OPENAI_API_KEY: apiKey },
   });
 };
 
