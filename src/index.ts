@@ -8,8 +8,9 @@ import { buildPrompt } from './prompt';
 const main = async (): Promise<void> => {
   try {
     await ensurePermission();
-    await bootstrap();
-    await runCodex(buildPrompt());
+    const prompt = buildPrompt();
+    const runtime = await bootstrap();
+    await runCodex(runtime, prompt);
     await teardown();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

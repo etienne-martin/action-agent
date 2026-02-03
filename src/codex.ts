@@ -8,6 +8,10 @@ import { startGitHubMcpServer } from './github-mcp';
 import { inputs } from './input';
 import { isPermissionError } from './permissions';
 
+type CodexRuntime = {
+  closeMcpServer: () => Promise<void>;
+};
+
 const CODEX_VERSION = '0.93.0';
 const CODEX_DIR = path.join(os.homedir(), '.codex');
 const CODEX_CONFIG_PATH = path.join(CODEX_DIR, 'config.toml');
@@ -60,17 +64,24 @@ export const bootstrap = async () => {
   await install();
   await restoreSession();
   await login();
+
+  const mcpServer = await startGitHubMcpServer(inputs.githubToken);
+
+  try {
+    ensureDir(CODEX_DIR);
+    fs.writeFileSync(CODEX_CONFIG_PATH, buildConfig(mcpServer.url));
+    return { closeMcpServer: mcpServer.close };
+  } catch (error) {
+    await mcpServer.close();
+    throw error;
+  }
 };
 
 export const teardown = async () => {
   await persistSession();
 };
 
-export const runCodex = async (prompt: string) => {
-  const mcpServer = await startGitHubMcpServer(inputs.githubToken);
-  ensureDir(CODEX_DIR);
-  fs.writeFileSync(CODEX_CONFIG_PATH, buildConfig(mcpServer.url));
-
+export const runCodex = async (runtime: CodexRuntime, prompt: string) => {
   try {
     await runCommand(
       'codex',
@@ -87,6 +98,6 @@ export const runCodex = async (prompt: string) => {
       'stderr',
     );
   } finally {
-    await mcpServer.close();
+    await runtime.closeMcpServer();
   }
 };
