@@ -24,7 +24,7 @@ const fetchPermission = async (githubToken: string): Promise<string> => {
 
     throw new Error(`Failed to verify permissions for '${actor}': ${error instanceof Error ? error.message : 'unknown error'}`);
   }
-}
+};
 
 export const ensureActorHasWriteAccess = async (githubToken: string): Promise<void> => {
   const permission = await fetchPermission(githubToken);
