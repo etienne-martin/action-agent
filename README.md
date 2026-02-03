@@ -43,8 +43,6 @@ Common permissions:
 - `contents: write` to push branches/commits.
 - `actions: read` to download/list artifacts (required only when `resume: true`).
 
-Note: GitHub supports `permissions` at workflow or job level, not per-step.
-
 If you want the agent to open PRs, also enable the repo setting:
 Settings -> Actions -> Workflow permissions -> "Allow GitHub Actions to create and approve pull requests."
 
