@@ -9,6 +9,7 @@ const main = async (): Promise<void> => {
     await ensurePermission();
     await bootstrap();
     await runCodex(buildPrompt());
+    await teardown();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
@@ -20,8 +21,6 @@ action-agent failed:
 ${message}
 \`\`\`
     `);
-  } finally {
-    await teardown();
   }
 };
 
