@@ -25,8 +25,8 @@ const buildCommandError = (
 
 const buildListeners = (stream: StreamMode): ExecListeners => {
   return {
-    stdout: stream === 'stdout' || stream === 'both' ? (data) => process.stdout.write(data) : undefined,
-    stderr: stream === 'stderr' || stream === 'both' ? (data) => process.stderr.write(data) : undefined,
+    stdout: ['stdout', 'both'].includes(stream) ? (data) => process.stdout.write(data) : undefined,
+    stderr: ['stderr', 'both'].includes(stream) ? (data) => process.stderr.write(data) : undefined,
   };
 };
 
