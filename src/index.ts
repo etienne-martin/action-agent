@@ -3,15 +3,15 @@ import { bootstrap, runCodex, teardown } from './codex';
 import { postComment } from './comment';
 import { readInputs } from './input';
 import { ensurePermission } from './permissions';
-import { prompt } from "./prompt";
+import { buildPrompt } from './prompt';
 
 const main = async (): Promise<void> => {
   try {
-    const { apiKey, githubToken } = readInputs();
+    const { apiKey, githubToken, prompt } = readInputs();
 
     await ensurePermission(githubToken);
     await bootstrap({ apiKey, githubToken });
-    await runCodex(prompt);
+    await runCodex(buildPrompt(prompt));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 

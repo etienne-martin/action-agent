@@ -11,6 +11,10 @@ inputs:
     description: Codex reasoning effort override (optional)
     required: false
     default: ""
+  prompt:
+    description: Optional extra instructions for the agent
+    required: false
+    default: ""
   api_key:
     description: Model provider API key
     required: true
