@@ -14,7 +14,7 @@ This action is intentionally thin:
 Because you can attach `action-agent` to any workflow trigger and provide a tailored `prompt`, you can build focused agents, for example:
 - Issue auto-triage: ask the right questions, label, detect duplicates, close with references.
 - PR reviews: summarize changes, identify risks, propose fixes, open follow-up PRs.
-- Scheduled automation: workflow security/permissions audits, hygiene PRs, periodic maintenance.
+- Scheduled automation: periodic code security sweeps, cleanup, recurring maintenance.
 - One-off automations via workflow dispatch: "triage everything with label X", "draft release notes", "summarize open incidents".
 
 ## Inputs
@@ -140,7 +140,7 @@ jobs:
 
 ### Scheduled agent
 
-Run periodic automation that would be annoying to do manually (e.g. a weekly workflow-permissions audit that opens a PR with fixes).
+Run periodic automation that would be annoying to do manually (e.g. a regular code security sweep that files issues).
 
 ```yaml
 name: action-agent-scheduled
@@ -153,16 +153,17 @@ jobs:
   agent:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
+      issues: write
     steps:
+      - uses: actions/checkout@v4 # required for Codex to read repo files
       - uses: sudden-network/action-agent@main
         with:
           api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ github.token }}
           prompt: |
-            Audit this repo's GitHub Actions workflows for least-privilege permissions.
-            If you can reduce permissions safely, open a PR with the changes and explain why.
+            Perform a lightweight security review of this repository.
+            Open GitHub issues for any findings (include file paths, risk, and suggested fixes).
 ```
 
 ### Manual dispatch
