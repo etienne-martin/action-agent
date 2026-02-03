@@ -9,11 +9,17 @@ import { isPermissionError } from './permissions';
 
 const CODEX_VERSION = '0.93.0';
 const CODEX_DIR = path.join(os.homedir(), '.codex');
+const CODEX_CONFIG_PATH = path.join(CODEX_DIR, 'config.toml');
 const MCP_SERVER_URL = 'https://api.githubcopilot.com/mcp/';
-const MCP_TOKEN_ENV = 'GITHUB_TOKEN';
+const MCP_TOKEN_ENV_NAME = 'GITHUB_TOKEN';
 
 const ensureDir = (dir: string) => fs.mkdirSync(dir, { recursive: true });
-const configPath = () => path.join(CODEX_DIR, 'config.toml');
+
+const buildConfig = () => `
+[mcp_servers.github]
+url = "${MCP_SERVER_URL}"
+bearer_token_env_var = "${MCP_TOKEN_ENV_NAME}"
+`.trim();
 
 const shouldResume = (): boolean => {
   if (!inputs.resume) return false;
@@ -25,11 +31,7 @@ const shouldResume = (): boolean => {
 
 const configureMcp = () => {
   ensureDir(CODEX_DIR);
-  process.env[MCP_TOKEN_ENV] = inputs.githubToken;
-  fs.writeFileSync(
-    configPath(),
-    `[mcp_servers.github]\nurl = "${MCP_SERVER_URL}"\nbearer_token_env_var = "${MCP_TOKEN_ENV}"\n`,
-  );
+  fs.writeFileSync(CODEX_CONFIG_PATH, buildConfig());
 };
 
 const restoreSession = async () => {
@@ -74,5 +76,10 @@ export const teardown = async () => {
 };
 
 export const runCodex = async (prompt: string) => {
-  await runCommand('codex', ['exec', 'resume', '--last', '--skip-git-repo-check', prompt], {}, 'stderr');
+  await runCommand(
+    'codex',
+    ['exec', 'resume', '--last', '--skip-git-repo-check', prompt],
+    { env: { [MCP_TOKEN_ENV_NAME]: inputs.githubToken } },
+    'stderr',
+  );
 };
