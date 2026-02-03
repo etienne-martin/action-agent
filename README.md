@@ -1,11 +1,11 @@
 # action-agent
 
-Run the OpenAI Codex CLI as a GitHub Action for any workflow trigger (issues, pull requests, comments, schedule, workflow_dispatch, etc.).
+Run the [OpenAI Codex CLI](https://github.com/openai/codex) as a GitHub Action for any [workflow trigger](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows) (issues, pull requests, comments, schedule, workflow_dispatch, etc.).
 
 This action is intentionally thin:
-- Installs a pinned `@openai/codex` CLI version.
+- Installs a pinned [`@openai/codex`](https://www.npmjs.com/package/@openai/codex) CLI version.
 - Logs in with your `api_key`.
-- Configures GitHub MCP so Codex can interact with GitHub using the workflow `github_token` (scoped by your workflow `permissions`).
+- Configures the [GitHub MCP server](https://github.com/github/github-mcp-server) so Codex can interact with GitHub using the workflow `github_token` (scoped by your workflow `permissions`).
 - Optionally resumes a per-issue / per-PR Codex session via GitHub [Workflow Artifacts](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts).
 - Runs `codex exec` with a prompt built from the GitHub event context + your optional `prompt` input.
 
@@ -25,17 +25,18 @@ Because you can attach `action-agent` to any workflow trigger and provide a tail
 | `github_token` | yes | GitHub token used by the action (API + artifacts) and passed to Codex as `GITHUB_TOKEN` for MCP. |
 | `model` | no | Codex model override (passed to `codex exec --model`). |
 | `reasoning_effort` | no | Codex reasoning effort override (passed via `-c model_reasoning_effort=...`). |
-| `prompt` | no | Extra instructions appended to the built-in prompt. |
+| `prompt` | no | Additional instructions for the agent. |
 | `resume` | no | Enable per-issue/per-PR session resume (`true`/`false`). Default: `false`. |
 
 ## Configuring the agent
 
 - Use `prompt` for per-workflow instructions (triage rules, review style, escalation policy, etc).
-- If your repo has an `AGENTS.md` at the repo root, Codex will pick it up and use it as persistent guidance across runs.
+- If your repo has an `AGENTS.md` at the repo root, Codex will pick it up and use it as persistent guidance across runs (see this repo's [AGENTS.md](AGENTS.md) for an example).
 
 ## Permissions (job-level)
 
 This action relies on the workflow `GITHUB_TOKEN`. Grant only what you need at the job level.
+See GitHub docs: [Permissions for GITHUB_TOKEN](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token).
 
 Common permissions:
 - `issues: write` to post issue comments (including PR conversation comments).
@@ -110,7 +111,7 @@ jobs:
       issues: write
       actions: read # only if resume: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # https://github.com/actions/checkout
       - uses: sudden-network/action-agent@main
         with:
           api_key: ${{ secrets.OPENAI_API_KEY }}
@@ -197,4 +198,4 @@ Notes:
 
 - `403: Resource not accessible by integration` typically means missing workflow permissions (`contents: write`, `pull-requests: write`, `issues: write`, etc.).
 - `Resume is enabled but the workflow lacks actions: read permission.` means you set `resume: true` but didn't grant `actions: read`.
-- If the workflow succeeds but you don't see a comment, check the run logs. By design, Codex decides when/where to comment; the built-in prompt encourages commenting only when useful.
+- If the workflow succeeds but you don't see a comment, check the run logs. By design, Codex decides when/where to comment (if at all); tune this with the `prompt` input.
