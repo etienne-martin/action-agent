@@ -49,5 +49,5 @@ export const teardown = async (): Promise<void> => {
 };
 
 export const runCodex = async (prompt: string): Promise<void> => {
-  await runCommand('codex', ['exec', prompt]);
+  await runCommand('codex', ['exec', 'resume', '--last', prompt]);
 };
