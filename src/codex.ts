@@ -49,5 +49,6 @@ export const teardown = async (): Promise<void> => {
 };
 
 export const runCodex = async (prompt: string): Promise<void> => {
+  // TODO: pass --skip-git-repo-check when we want to allow non-git workdirs.
   await runCommand('codex', ['exec', 'resume', '--last', prompt]);
 };

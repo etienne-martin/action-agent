@@ -4,11 +4,13 @@ import { bootstrap, runCodex, teardown } from './codex';
 import { postComment } from './comment';
 import { getIssueNumber, getSubjectType } from './context';
 import { readInputs } from './input';
+import { ensureActorHasWriteAccess } from './permissions';
 
 const main = async (): Promise<void> => {
   try {
     const { apiKey, githubToken } = readInputs();
 
+    await ensureActorHasWriteAccess(githubToken);
     await bootstrap({ apiKey, githubToken });
 
     await runCodex([
@@ -17,7 +19,7 @@ const main = async (): Promise<void> => {
       `Event: ${context.eventName}`,
       `Subject: ${getSubjectType()} #${getIssueNumber()}`,
       `Workspace: ${process.env.GITHUB_WORKSPACE}`,
-      `Event: ${JSON.stringify(await import(process.env.GITHUB_EVENT_PATH ?? ""))}`, // TODO throw if GITHUB_EVENT_PATH is undefined
+      `Event: ${JSON.stringify(context.payload)}`,
       'Act autonomously and take action only if it is useful.',
     ].join('\n'));
   } catch (error) {
