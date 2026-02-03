@@ -38,7 +38,7 @@ Because you can attach `action-agent` to any workflow trigger and provide a tail
 This action relies on the workflow `GITHUB_TOKEN`. Grant only what you need at the job level.
 
 Common permissions:
-- `issues: write` to post issue/PR conversation comments and error comments.
+- `issues: write` to post issue comments (including PR conversation comments).
 - `pull-requests: write` to comment on PRs and open PRs.
 - `contents: write` to push branches/commits.
 - `actions: read` to download/list artifacts (required only when `resume: true`).
