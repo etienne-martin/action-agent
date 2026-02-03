@@ -75,7 +75,7 @@ All examples assume you created a secret named `OPENAI_API_KEY`.
 Auto-triage issue threads: ask clarifying questions, detect duplicates, and keep context across follow-ups with `resume: true`.
 
 ```yaml
-name: action-agent
+name: action-agent-issues
 
 on:
   issues:
@@ -106,7 +106,7 @@ jobs:
 Review pull requests, respond to PR comments, and open follow-up PRs when you can fix something safely.
 
 ```yaml
-name: action-agent
+name: action-agent-pr-reviewer
 
 on:
   pull_request:
