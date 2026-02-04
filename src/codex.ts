@@ -65,8 +65,10 @@ const login = async () => {
 };
 
 export const bootstrap = async () => {
-  await install();
-  await restoreSession();
+  await Promise.all([
+    install(),
+    restoreSession()
+  ]);
   await configureMcp();
   await login();
 };
