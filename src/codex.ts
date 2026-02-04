@@ -48,6 +48,7 @@ const restoreSession = async () => {
 
 const persistSession = async () => {
   if (!shouldResume()) return;
+  fs.rmSync(CODEX_CONFIG_PATH, { force: true });
   fs.rmSync(path.join(CODEX_DIR, 'auth.json'), { force: true });
   fs.rmSync(path.join(CODEX_DIR, 'tmp'), { recursive: true, force: true });
   await uploadArtifact(CODEX_DIR);
@@ -66,8 +67,8 @@ const login = async () => {
 export const bootstrap = async () => {
   await install();
   await restoreSession();
-  await login();
   await configureMcp();
+  await login();
 };
 
 export const teardown = async () => {
