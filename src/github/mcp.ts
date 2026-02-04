@@ -146,7 +146,7 @@ const createGitHubServer = (githubToken: string): McpServer => {
     'create_or_update_file',
     {
       description:
-        'Create or update a file on a branch (via the Contents API). This creates a commit on the target branch. Use this to update files for a pull request by targeting its head branch.',
+        'Create or update a file on a branch (via the Contents API). Provide `content` as the raw UTF-8 file contents. This creates a commit on the target branch. Use this to update files for a pull request by targeting its head branch.',
       inputSchema: {
         owner: z.string(),
         repo: z.string(),
