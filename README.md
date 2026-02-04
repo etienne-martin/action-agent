@@ -14,7 +14,7 @@ This action is intentionally thin:
 Because you can attach `action-agent` to any workflow trigger and provide a tailored `prompt`, you can build focused agents, for example:
 - Issue auto-triage: ask the right questions, label, detect duplicates, close with references.
 - PR reviews: summarize changes, identify risks, propose fixes, open follow-up PRs.
-- Scheduled automation: periodic code security sweeps, cleanup, recurring maintenance.
+- Scheduled automation: periodic code security audits, cleanup, recurring maintenance.
 - One-off automations via workflow dispatch: "triage everything with label X", "draft release notes", "summarize open incidents".
 
 ## Inputs
