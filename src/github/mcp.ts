@@ -23,7 +23,7 @@ const startServer = async (): Promise<{ url: string; stop: () => Promise<void> }
   const authToken = randomBytes(32).toString('hex');
 
   const createMcpServer = () => {
-    const server = new McpServer({ name: 'action-agent-github', version: '0.1.0' });
+    const server = new McpServer({ name: 'workflow-agent-github', version: '0.1.0' });
 
     server.registerTool(
       'octokit_request',

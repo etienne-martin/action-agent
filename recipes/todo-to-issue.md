@@ -20,8 +20,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run action-agent
-        uses: sudden-network/action-agent@develop
+      - name: Run workflow-agent
+        uses: sudden-network/workflow-agent@main
         with:
           agent_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ github.token }}

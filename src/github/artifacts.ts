@@ -10,7 +10,7 @@ type RepoArtifact = Awaited<
   ReturnType<ReturnType<typeof getOctokit>['rest']['actions']['listArtifactsForRepo']>
 >['data']['artifacts'][number];
 
-const getArtifactName = () => `action-agent-${getSubjectType()}-${getIssueNumber()}`;
+const getArtifactName = () => `workflow-agent-${getSubjectType()}-${getIssueNumber()}`;
 
 const listArtifactsByName = async (): Promise<RepoArtifact[]> => {
   const { owner, repo } = context.repo;

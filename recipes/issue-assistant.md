@@ -20,8 +20,8 @@ jobs:
       issues: write # post comments, close duplicates
       actions: read # resume sessions via artifacts
     steps:
-      - name: Run action-agent
-        uses: sudden-network/action-agent@main
+      - name: Run workflow-agent
+        uses: sudden-network/workflow-agent@main
         with:
           agent_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ github.token }}

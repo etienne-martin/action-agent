@@ -28,5 +28,5 @@ export const postErrorComment = async () => {
   const { owner, repo } = context.repo;
   const runUrl = `${serverUrl}/${owner}/${repo}/actions/runs/${runId}`;
 
-  await postComment(`action-agent failed, see workflow run: ${runUrl}`);
+  await postComment(`workflow-agent failed, see workflow run: ${runUrl}`);
 };

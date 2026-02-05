@@ -1,4 +1,4 @@
-# action-agent
+# workflow-agent
 
 Run programmable agents on any [GitHub Workflow](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows) (issues, pull requests, comments, schedule, dispatch, etc.) to enable automation across your repo.
 
@@ -18,7 +18,7 @@ You can attach an agent to any workflow and provide a custom prompt to unlock a 
 - [Security audit](recipes/security-audit.md) - Run periodic code security reviews and file issues.
 - [Todo to issues](recipes/todo-to-issue.md) - Create issues for new TODOs introduced on the default branch.
 
-Have a useful workflow? [Share your recipe](https://github.com/sudden-network/action-agent/new/main/recipes?filename=recipe.yml)
+Have a useful workflow? [Share your recipe](https://github.com/sudden-network/workflow-agent/new/main/recipes?filename=recipe.yml)
 
 ## Action Inputs
 

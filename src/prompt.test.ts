@@ -25,14 +25,14 @@ describe('buildPrompt', () => {
 
     expect(result).toContain('A new GitHub event triggered this workflow.');
     expect(result).toContain('/tmp/event.json');
-    expect(result).not.toContain('You are action-agent');
+    expect(result).not.toContain('You are workflow-agent');
   });
 
   it('uses the full prompt when not resumed', async () => {
     const buildPrompt = await loadPrompt('Extra instructions');
     const result = buildPrompt({ resumed: false, trustedCollaborators: ['octocat', 'hubot'] });
 
-    expect(result).toContain('You are action-agent');
+    expect(result).toContain('You are workflow-agent');
     expect(result).toContain('- @octocat');
     expect(result).toContain('- @hubot');
     expect(result).toContain('/tmp/event.json');

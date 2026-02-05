@@ -29,7 +29,7 @@ const main = async () => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
-    setFailed(`action-agent failed: ${message}`);
+    setFailed(`workflow-agent failed: ${message}`);
 
     if (isIssueOrPullRequest()) {
       await postErrorComment();

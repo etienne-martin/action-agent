@@ -23,8 +23,8 @@ jobs:
       issues: write # post comments, open issues
       pull-requests: write # comment on PRs, open PRs
     steps:
-      - name: Run action-agent
-        uses: sudden-network/action-agent@main
+      - name: Run workflow-agent
+        uses: sudden-network/workflow-agent@main
         with:
           agent_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ github.token }}
