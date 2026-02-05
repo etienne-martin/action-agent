@@ -1,6 +1,6 @@
 # Code review
 
-Review pull requests, respond to PR comments, and open follow-up issues when requested.
+Review pull requests, respond to comments, and open follow-up issues when requested.
 
 ## Workflow
 
@@ -10,10 +10,10 @@ name: code-review
 on:
   pull_request:
     types: [opened, edited, synchronize, ready_for_review]
-  issue_comment:
-    types: [created, edited] # PR conversation comments also come through here
   pull_request_review_comment:
     types: [created, edited] # inline comments
+  issue_comment:
+    types: [created, edited] # PR conversation comments also come through here
 
 jobs:
   code-review:

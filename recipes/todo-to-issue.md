@@ -1,20 +1,18 @@
 # Todo to issues
 
-Scan new TODOs introduced on `develop` and open issues for the ones that do not already exist.
+Scan new TODOs introduced on the default branch and open issues for the ones that do not already exist.
 
 ## Workflow
 
 ```yaml
 name: todo-to-issue
 
-on:
-  push:
-    branches:
-      - develop
+on: push
 
 jobs:
   todo-to-issues:
     runs-on: ubuntu-latest
+    if: ${{ github.ref_name == github.event.repository.default_branch }}
     permissions:
       contents: read # scan repo for TODOs
       issues: write # create issues for new TODOs
