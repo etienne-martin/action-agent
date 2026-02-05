@@ -4,12 +4,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod/v4';
+import type { LocalMcpServer } from '../mcp';
 import { getOctokit } from './octokit';
-
-interface RunningMcpServer {
-  url: Promise<string>;
-  close: () => Promise<void>;
-}
 
 const readJsonBody = async (req: http.IncomingMessage): Promise<unknown> => {
   const chunks: Buffer[] = [];
@@ -22,46 +18,46 @@ const readJsonBody = async (req: http.IncomingMessage): Promise<unknown> => {
   return JSON.parse(raw);
 };
 
-const createGitHubServer = (): McpServer => {
-  const server = new McpServer({ name: 'action-agent-github', version: '0.1.0' });
-
-  server.registerTool(
-    'octokit_request',
-    {
-      description:
-        'Call any GitHub REST API endpoint via Octokit.request. Provide `route` like "GET /repos/{owner}/{repo}/pulls/{pull_number}".',
-      inputSchema: {
-        route: z.string(),
-        parameters: z.record(z.string(), z.unknown()).optional(),
-      },
-    },
-    async ({ route, parameters }) => {
-      const response = await getOctokit().request(route, parameters ?? {});
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                status: response.status,
-                data: response.data,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
-    },
-  );
-
-  return server;
-};
-
-const startGitHubMcpServer = async () => {
+const startServer = async (): Promise<{ url: string; stop: () => Promise<void> }> => {
   const transports = new Map<string, StreamableHTTPServerTransport>();
   const authToken = randomBytes(32).toString('hex');
+
+  const createMcpServer = () => {
+    const server = new McpServer({ name: 'action-agent-github', version: '0.1.0' });
+
+    server.registerTool(
+      'octokit_request',
+      {
+        description:
+          'Call any GitHub REST API endpoint via Octokit.request. Provide `route` like "GET /repos/{owner}/{repo}/pulls/{pull_number}".',
+        inputSchema: {
+          route: z.string(),
+          parameters: z.record(z.string(), z.unknown()).optional(),
+        },
+      },
+      async ({ route, parameters }) => {
+        const response = await getOctokit().request(route, parameters ?? {});
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  status: response.status,
+                  data: response.data,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      },
+    );
+
+    return server;
+  };
 
   const handleRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1');
@@ -111,8 +107,7 @@ const startGitHubMcpServer = async () => {
         transports.delete(transport.sessionId);
       };
 
-      const server = createGitHubServer();
-      await server.connect(transport);
+      await createMcpServer().connect(transport);
       await transport.handleRequest(req, res, body);
       return;
     }
@@ -135,7 +130,7 @@ const startGitHubMcpServer = async () => {
     res.end('Method Not Allowed');
   };
 
-  const server = http.createServer((req, res) => {
+  const httpServer = http.createServer((req, res) => {
     handleRequest(req, res).catch((error: unknown) => {
       if (res.headersSent) return;
       res.statusCode = 500;
@@ -151,14 +146,14 @@ const startGitHubMcpServer = async () => {
   });
 
   await new Promise<void>((resolve, reject) => {
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      server.unref();
+    httpServer.on('error', reject);
+    httpServer.listen(0, '127.0.0.1', () => {
+      httpServer.unref();
       resolve();
     });
   });
 
-  const address = server.address();
+  const address = httpServer.address();
 
   if (!address || typeof address === 'string') {
     throw new Error('Failed to start MCP server');
@@ -166,19 +161,29 @@ const startGitHubMcpServer = async () => {
 
   return {
     url: `http://127.0.0.1:${address.port}/mcp?token=${authToken}`,
-    close: async () => {
+    stop: async () => {
       await Promise.allSettled(Array.from(transports.values()).map((transport) => transport.close()));
       await new Promise<void>((resolve, reject) => {
-        server.close((error) => (error ? reject(error) : resolve()));
+        httpServer.close((error) => (error ? reject(error) : resolve()));
       });
     },
   };
 };
 
-export const githubMcpServer = (): RunningMcpServer => {
-  const pendingServer = startGitHubMcpServer();
-  return {
-    url: pendingServer.then((server) => server.url),
-    close: () => pendingServer.then((server) => server.close()),
-  };
+let pendingServer: Promise<{ url: string; stop: () => Promise<void> }> | null = null;
+
+export const githubMcpServer: LocalMcpServer = {
+  start: async () => {
+    if (!pendingServer) {
+      pendingServer = startServer();
+    }
+    const server = await pendingServer;
+    return { name: "github", url: server.url };
+  },
+  stop: async () => {
+    if (!pendingServer) return;
+    const server = await pendingServer;
+    await server.stop();
+    pendingServer = null;
+  },
 };

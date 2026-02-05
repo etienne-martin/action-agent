@@ -7,11 +7,11 @@ export const inputs = {
   get githubToken(): string {
     return getInput('github_token', { required: true });
   },
+  get agent(): string {
+    return getInput('agent') || 'codex';
+  },
   get model(): string | undefined {
     return getInput('model') || undefined;
-  },
-  get reasoningEffort(): string | undefined {
-    return getInput('reasoning_effort') || undefined;
   },
   get prompt(): string | undefined {
     return getInput('prompt') || undefined;

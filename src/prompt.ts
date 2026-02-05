@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { inputs } from './github/input';
-import { ResumeStatus } from './codex';
+import type { ResumeStatus } from './agent';
 
 const PROMPT_TEMPLATE = fs.readFileSync(path.join(__dirname, 'PROMPT.md'), 'utf8');
 const PROMPT_RESUME_TEMPLATE = fs.readFileSync(path.join(__dirname, 'PROMPT_RESUME.md'), 'utf8');

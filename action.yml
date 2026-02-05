@@ -1,20 +1,20 @@
 name: action-agent
 
-description: Run Codex CLI for GitHub events like issues, pull requests, comments, schedules, and manual dispatches.
+description: Unlock a wide range of possibilities by attaching a programmable agent to GitHub events.
 
 inputs:
   api_key:
     description: Model provider API key
     required: true
   github_token:
-    description: GitHub token used for GitHub API + MCP
+    description: GitHub token used by the action
     required: true
-  model:
-    description: Codex model override
+  agent:
+    description: Agent to run
     required: false
-    default: ""
-  reasoning_effort:
-    description: Codex reasoning effort override
+    default: codex
+  model:
+    description: Agent model override (for Codex, append reasoning effort with /, e.g. gpt-5.2-codex/xhigh)
     required: false
     default: ""
   prompt:

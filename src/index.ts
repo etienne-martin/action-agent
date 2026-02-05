@@ -1,16 +1,30 @@
 import { setFailed } from '@actions/core';
-import { bootstrap, runCodex, teardown } from './codex';
+import { getAgent } from './agents';
 import { postErrorComment } from './github/comment';
 import { isIssueOrPullRequest } from './github/context';
+import { githubMcpServer } from './github/mcp';
 import { buildPrompt } from './prompt';
-import { ensurePrivateRepo, ensureWriteAccess } from "./github/security";
+import { ensurePrivateRepo, ensureWriteAccess } from './github/security';
 
 const main = async () => {
   try {
-    ensurePrivateRepo();
-    await ensureWriteAccess();
-    await runCodex(buildPrompt(await bootstrap()));
-    await teardown();
+    const agent = await getAgent();
+
+    try {
+      ensurePrivateRepo();
+      await ensureWriteAccess();
+
+      const { resumeStatus } = await agent.bootstrap({
+        mcpServers: [await githubMcpServer.start()]
+      });
+
+      await agent.run(buildPrompt({ resumeStatus }));
+    } finally {
+      await Promise.allSettled([
+        githubMcpServer.stop(),
+        agent.teardown()
+      ]);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
