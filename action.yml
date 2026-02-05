@@ -1,6 +1,6 @@
 name: action-agent
 
-description: Unlock a wide range of possibilities by attaching a programmable agent to GitHub events.
+description: Run programmable agents on any GitHub Workflow to enable automation across your repo.
 
 inputs:
   agent_api_key:

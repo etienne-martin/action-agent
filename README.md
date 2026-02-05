@@ -1,6 +1,6 @@
 # action-agent
 
-Run programmable agents on any [GitHub Workflow](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows) (issues, pull requests, comments, schedule, dispatch, etc.) to unlock a wide range of automation.
+Run programmable agents on any [GitHub Workflow](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows) (issues, pull requests, comments, schedule, dispatch, etc.) to enable automation across your repo.
 
 ## Persistent sessions
 
@@ -10,7 +10,7 @@ This makes iterative work practical: the agent remembers what it already covered
 
 ## What you can build with this
 
-You can attach an agent to any workflow and provide a custom prompt to unlock a huge range of automations. For example:
+You can attach an agent to any workflow and provide a custom prompt to unlock a wide range of automations. For example:
 
 - [Code review](recipes/code-review.md) - Review PRs, respond to comments, and open follow-up issues.
 - [Issue assistant](recipes/issue-assistant.md) - Auto-triage issue threads with clarifying questions and duplicate detection.
@@ -62,3 +62,8 @@ Settings -> Actions -> Workflow permissions -> "Allow GitHub Actions to create a
 - GitHub side effects are constrained by the workflow `permissions` you grant to `GITHUB_TOKEN`.
 - By default, `GITHUB_TOKEN` is scoped to the repository running the workflow: it cannot write to other repositories unless you supply a broader token with cross-repo access.
 - Agents run in `read-only` sandbox mode: they can read files but cannot write to disk or access the network, even from shell commands.
+- Use clear, scoped prompts and least-privilege permissions.
+- Agents can make mistakes, so scope triggers carefully and keep permissions minimal before enabling.
+- Keep humans in the loop for decisions that affect code, security, or policy.
+
+This action uses generative AI to produce responses and automation. It runs with the workflow’s permissions; review prompts, triggers, and repo access before enabling it, and keep permissions minimal.
