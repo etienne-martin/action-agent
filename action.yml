@@ -1,4 +1,4 @@
-name: Workflow Agent
+name: ZKQ-7719
 author: sudden-network
 
 description: Run programmable agents on any GitHub Workflow to enable automation across your repo.
