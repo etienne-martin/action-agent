@@ -37,7 +37,7 @@ jobs:
             - Internal-only changes -> none.
 
             If you recommend a bump:
-            - Comment on the PR with a short summary and rationale, plus the recommended bump: major|minor|patch.
+            - Comment on the PR with a short summary explaining the reason for the bump.
             - Include the current version and the proposed version in a diff-style code fence:
               ```diff
               - version: <current>
