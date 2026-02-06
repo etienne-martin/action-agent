@@ -1,14 +1,8 @@
-# workflow-agent
+# Workflow Agent
 
 Run programmable agents on any [GitHub Workflow](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows) (issues, pull requests, comments, schedule, dispatch, etc.) to enable automation across your repo.
 
-## Persistent sessions
-
-Sessions persist per issue and pull request, so the agent picks up where it left off across new comments, edits, and new commits.
-
-This makes iterative work practical: the agent remembers what it already covered, reacts to changes, and stays consistent throughout the process.
-
-## What you can build with this
+## What you can automate
 
 You can attach an agent to any workflow and provide a custom prompt to unlock a wide range of automations. For example:
 
@@ -21,7 +15,13 @@ You can attach an agent to any workflow and provide a custom prompt to unlock a 
 
 Have a useful workflow? [Share your recipe](https://github.com/sudden-network/workflow-agent/new/main/recipes?filename=recipe.yml)
 
-## Action Inputs
+## Persistent sessions
+
+Sessions persist per issue and pull request, so the agent picks up where it left off across new comments, edits, and new commits.
+
+This makes iterative work practical: the agent remembers what it already covered, reacts to changes, and stays consistent throughout the process.
+
+## Action inputs
 
 | Input | Required | Description |
 | --- | --- | --- |
