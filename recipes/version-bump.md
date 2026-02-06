@@ -4,7 +4,7 @@ Suggest a semantic version bump for pull requests.
 
 ## Workflow
 
-```yaml
+````yaml
 name: version-bump
 
 on:
@@ -44,4 +44,4 @@ jobs:
               + version: <proposed>
               ```
             If you do not recommend a bump, do not comment.
-```
+````
