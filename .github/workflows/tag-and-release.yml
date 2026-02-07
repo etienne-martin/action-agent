@@ -16,7 +16,6 @@ jobs:
         uses: sudden-network/workflow-agent@v1
         with:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-          github_token: ${{ github.token }}
           prompt: |
             Goal: on every push to main, move v{major} to the current commit. If package.json version changed, create v{version} and a GitHub release for it.
 

@@ -28,7 +28,6 @@ jobs:
         uses: sudden-network/workflow-agent@v1
         with:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-          github_token: ${{ github.token }}
           resume: true
           prompt: |
             Review this pull request. Be concise and specific.

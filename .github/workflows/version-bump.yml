@@ -25,7 +25,6 @@ jobs:
         uses: sudden-network/workflow-agent@v1
         with:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-          github_token: ${{ github.token }}
           resume: true
           prompt: |
             Goal: keep the package.json version aligned with the impact of changes.
