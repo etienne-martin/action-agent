@@ -27,14 +27,14 @@ describe('buildPrompt', () => {
 
     expect(result).toContain('A new GitHub event triggered this workflow.');
     expect(result).toContain('/tmp/event.json');
-    expect(result).not.toContain('You are workflow-agent');
+    expect(result).not.toContain('You are github-actions[bot]');
   });
 
   it('uses the full prompt when not resumed', async () => {
     const buildPrompt = await loadPrompt('Extra instructions');
     const result = buildPrompt({ resumed: false, trustedCollaborators: ['octocat', 'hubot'], tokenActor: WORKFLOW_TOKEN_ACTOR });
 
-    expect(result).toContain('You are workflow-agent');
+    expect(result).toContain('You are `github-actions[bot]`');
     expect(result).toContain('- @octocat');
     expect(result).toContain('- @hubot');
     expect(result).toContain('/tmp/event.json');
