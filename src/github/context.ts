@@ -20,11 +20,6 @@ export const getIssueNumber = (): number => {
   throw new Error('Missing issue or pull request number in event payload.');
 };
 
-export const getRepoVisibility = (): 'public' | 'private' | 'unknown' => {
-  const isPrivate = context.payload.repository?.private;
-
-  if (isPrivate === true) return 'private';
-  if (isPrivate === false) return 'public';
-
-  return 'unknown';
+export const isPrivateRepo = () => {
+  return !!context.payload.repository?.private;
 };

@@ -23,7 +23,11 @@ describe('buildPrompt', () => {
 
   it('uses the resume prompt when resumed', async () => {
     const buildPrompt = await loadPrompt();
-    const result = buildPrompt({ resumed: true, trustedCollaborators: ['octocat'], tokenActor: WORKFLOW_TOKEN_ACTOR });
+    const result = buildPrompt({
+      resumed: true,
+      trustedCollaborators: [{ login: 'octocat', roleName: 'write' }],
+      tokenActor: WORKFLOW_TOKEN_ACTOR,
+    });
 
     expect(result).toContain('A new GitHub event triggered this workflow.');
     expect(result).toContain('/tmp/event.json');
@@ -32,11 +36,19 @@ describe('buildPrompt', () => {
 
   it('uses the full prompt when not resumed', async () => {
     const buildPrompt = await loadPrompt('Extra instructions');
-    const result = buildPrompt({ resumed: false, trustedCollaborators: ['octocat', 'hubot'], tokenActor: WORKFLOW_TOKEN_ACTOR });
+    const result = buildPrompt({
+      resumed: false,
+      trustedCollaborators: [
+        { login: 'octocat', roleName: 'admin' },
+        { login: 'hubot', roleName: 'read' },
+      ],
+      tokenActor: WORKFLOW_TOKEN_ACTOR,
+    });
 
     expect(result).toContain('You are `github-actions[bot]`');
-    expect(result).toContain('- @octocat');
-    expect(result).toContain('- @hubot');
+    expect(result).toContain('- @octocat (role: admin)');
+    expect(result).toContain('- @hubot (role: read)');
+    expect(result).toContain('mirror their role');
     expect(result).toContain('/tmp/event.json');
     expect(result).toContain('Extra instructions');
     expect(result).toContain('github-actions[bot]');
@@ -46,7 +58,10 @@ describe('buildPrompt', () => {
     const buildPrompt = await loadPrompt('Extra instructions');
     const result = buildPrompt({
       resumed: false,
-      trustedCollaborators: ['octocat', 'hubot'],
+      trustedCollaborators: [
+        { login: 'octocat', roleName: 'admin' },
+        { login: 'hubot', roleName: 'read' },
+      ],
       tokenActor: 'sudden-agent[bot]',
     });
 
