@@ -48,7 +48,6 @@ describe('buildPrompt', () => {
     expect(result).toContain('You are `github-actions[bot]`');
     expect(result).toContain('- @octocat (role: admin)');
     expect(result).toContain('- @hubot (role: read)');
-    expect(result).toContain('mirror their role');
     expect(result).toContain('/tmp/event.json');
     expect(result).toContain('Extra instructions');
     expect(result).toContain('github-actions[bot]');

@@ -29,6 +29,7 @@ export const fetchTrustedCollaborators = async (): Promise<TrustedCollaborator[]
       {
         owner,
         repo,
+        permission: "push",
         per_page: 100,
       },
     );
