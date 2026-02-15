@@ -31,7 +31,8 @@ describe('buildPrompt', () => {
 
     expect(result).toContain('A new GitHub event triggered this workflow.');
     expect(result).toContain('/tmp/event.json');
-    expect(result).not.toContain('You are github-actions[bot]');
+    expect(result).toContain('Re-evaluate the task you were previously given');
+    expect(result).not.toContain('You are `github-actions[bot]`');
   });
 
   it('uses the full prompt when not resumed', async () => {
