@@ -7,14 +7,14 @@ on:
     types: [opened, reopened, edited, synchronize, ready_for_review]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
   actions: read
 
 concurrency:
-  group: pr-${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   version-bump:
@@ -27,20 +27,25 @@ jobs:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
           resume: true
           prompt: |
-            Goal: keep the package.json version aligned with the impact of changes.
+            Goal: keep the root package.json version aligned with the impact of changes in this repo.
 
-            Review the PR changes and decide whether a version bump is needed:
-            - Breaking changes -> major.
-            - New backward compatible features -> minor.
-            - Changes that alter the agent's behavior or outputs -> minor.
-            - Backward compatible bug fixes, security fixes, dependency updates -> patch.
-            - Internal-only changes, no runtime changes -> none.
+            Bump when changes affect the published GitHub Action or its behavior, outputs, inputs, or runtime
+            dependencies. Do not bump for tooling-only changes (tests, CI, internal refactors with no runtime impact).
 
-            If you recommend a bump:
-            - Comment on the PR with a short summary explaining the reason for the bump.
-            - Include the current version and the proposed version in a diff-style code fence:
-              ```diff
-              - version: <current>
-              + version: <proposed>
-              ```
-            If you do not recommend a bump, do not comment.
+            SemVer rules:
+            - Breaking change -> major.
+            - New backward-compatible feature -> minor.
+            - Backward-compatible fixes or runtime-affecting changes -> patch (bugs, perf, dependency updates, docs
+              for public API).
+            - Tooling-only changes -> no bump.
+
+            Detect manual bumps (package.json version changed vs base). If present and correct, keep. If wrong, adjust.
+
+            Before applying or reapplying a bump, review the PR conversation and commit history for prior bump reverts
+            or explicit rejections. If the same bump reason was previously rejected or reverted, do not reapply it.
+            Only reapply when the PR diff changed after the rejection and you can justify a different bump reason. If
+            you reapply, say why the prior rejection no longer applies.
+
+            If a bump is required, update package.json in the PR branch, only edit the `version` field, and add an
+            inline comment with a short reason. If no bump is required and no manual bump is present, do not change
+            files and do not comment.

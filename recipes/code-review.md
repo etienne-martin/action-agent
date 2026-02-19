@@ -15,12 +15,18 @@ on:
   issue_comment:
     types: [created, edited] # PR conversation comments also come through here
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   code-review:
-    if: ${{ !github.event.pull_request.draft }}
+    if: >-
+      github.event.pull_request ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     runs-on: ubuntu-latest
     permissions:
-      contents: read # read PR diff and files
+      contents: write # apply fixes when requested
       pull-requests: write # inline review comments and replies
       issues: write # PR conversation comments and follow-up issues
       actions: read # resume sessions via artifacts
@@ -34,9 +40,19 @@ jobs:
           agent_api_key: ${{ secrets.OPENAI_API_KEY }}
           resume: true
           prompt: |
-            Review this pull request. Be concise and specific.
-            Focus on correctness, security, and maintainability.
-            If you find issues, leave inline comments when appropriate and propose concrete fixes.
+            Goals:
+            - Help the developer get this change shipped.
+            - Enforce correctness, security, and maintainability.
+
+            If the PR is a draft, do not perform a full review.
+            In draft mode, only answer direct questions, flag obvious blockers, or ask for missing info.
+            If the PR is ready for review (not draft), perform a full review and submit a PR review. Be concise and
+            specific.
+            Use inline comments for specific issues and propose concrete fixes.
+            Do not fix issues you find during review unless the author explicitly asks you to. Only propose fixes.
+            If the author asks you to fix issues, apply the changes directly to the PR branch.
+            If the branch is behind the base branch, update it and comment to let the author know.
+            If the PR description is missing or empty, add a detailed summary.
             Only open follow-up issues when explicitly requested.
-            If there is nothing to add, react with a thumbs up on the PR itself.
+            If the PR is ready and there is nothing to add, submit an approving review with a short summary.
 ```
