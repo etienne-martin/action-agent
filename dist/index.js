@@ -91071,7 +91071,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = exports.teardown = exports.bootstrap = exports.parseModelInput = exports.getAuthFileSecretUpdate = exports.hasAuthFileChanged = exports.resolveAuthStrategy = exports.buildConfig = void 0;
+exports.run = exports.teardown = exports.bootstrap = exports.parseModelInput = exports.getAuthFileSecretUpdate = exports.hasAuthFileChanged = exports.resolveAuthStrategy = exports.shouldPrepareLinuxSandbox = exports.buildConfig = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(79896));
 const os_1 = __importDefault(__nccwpck_require__(70857));
 const path_1 = __importDefault(__nccwpck_require__(16928));
@@ -91135,6 +91135,16 @@ const persistSession = async () => {
 };
 const install = async () => {
     await (0, exec_1.runCommand)('npm', ['install', '-g', `@openai/codex@${CODEX_VERSION}`]);
+};
+const shouldPrepareLinuxSandbox = () => {
+    return !input_1.inputs.sudo && process.env.RUNNER_OS === 'Linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted';
+};
+exports.shouldPrepareLinuxSandbox = shouldPrepareLinuxSandbox;
+const prepareLinuxSandbox = async () => {
+    if (!(0, exports.shouldPrepareLinuxSandbox)())
+        return;
+    await (0, exec_1.runCommand)('sudo', ['sysctl', '-w', 'kernel.unprivileged_userns_clone=1']);
+    await (0, exec_1.runCommand)('sudo', ['sysctl', '-w', 'kernel.apparmor_restrict_unprivileged_userns=0']);
 };
 const resolveAuthStrategy = () => {
     const apiKey = input_1.inputs.agentApiKey?.trim() || undefined;
@@ -91213,6 +91223,7 @@ const bootstrap = async ({ mcpServers }) => {
     const [resumed] = await Promise.all([
         restoreSession(),
         install(),
+        prepareLinuxSandbox(),
     ]);
     writeCodexConfig(mcpServers);
     await login();

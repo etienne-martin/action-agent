@@ -73,6 +73,17 @@ const install = async () => {
   await runCommand('npm', ['install', '-g', `@openai/codex@${CODEX_VERSION}`]);
 };
 
+export const shouldPrepareLinuxSandbox = (): boolean => {
+  return !inputs.sudo && process.env.RUNNER_OS === 'Linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted';
+};
+
+const prepareLinuxSandbox = async () => {
+  if (!shouldPrepareLinuxSandbox()) return;
+
+  await runCommand('sudo', ['sysctl', '-w', 'kernel.unprivileged_userns_clone=1']);
+  await runCommand('sudo', ['sysctl', '-w', 'kernel.apparmor_restrict_unprivileged_userns=0']);
+};
+
 export const resolveAuthStrategy = (): AuthStrategy => {
   const apiKey = inputs.agentApiKey?.trim() || undefined;
   const authFile = inputs.agentAuthFile?.trim() || undefined;
@@ -161,6 +172,7 @@ export const bootstrap = async ({ mcpServers }: BootstrapOptions): Promise<Boots
   const [resumed] = await Promise.all([
     restoreSession(),
     install(),
+    prepareLinuxSandbox(),
   ]);
   writeCodexConfig(mcpServers);
   await login();

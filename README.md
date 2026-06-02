@@ -39,6 +39,7 @@ This makes iterative work practical: the agent remembers what it already covered
 
 - Session persistence requires the `actions: read` permission to download artifacts.
 - Artifact retention is controlled by your repo/org settings (see [Workflow Artifacts](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts)).
+- In non-`sudo` mode on GitHub-hosted Linux runners, sudden-agent prepares Codex sandboxing by enabling unprivileged user namespaces and clearing Ubuntu's AppArmor user namespace gate for the rest of the job.
 
 ## Configuring the agent
 

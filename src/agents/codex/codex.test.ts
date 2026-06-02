@@ -4,6 +4,7 @@ import {
   hasAuthFileChanged,
   parseModelInput,
   resolveAuthStrategy,
+  shouldPrepareLinuxSandbox,
 } from './codex';
 
 describe('agent codex', () => {
@@ -125,6 +126,36 @@ describe('agent codex', () => {
       expect(() => resolveAuthStrategy()).toThrow(
         'Missing auth: set `agent_api_key` or `agent_auth_file`.',
       );
+    });
+  });
+
+  describe('shouldPrepareLinuxSandbox', () => {
+    afterEach(() => {
+      delete process.env.INPUT_SUDO;
+      delete process.env.RUNNER_OS;
+      delete process.env.RUNNER_ENVIRONMENT;
+    });
+
+    it('prepares non-sudo runs on GitHub-hosted Linux', () => {
+      process.env.RUNNER_OS = 'Linux';
+      process.env.RUNNER_ENVIRONMENT = 'github-hosted';
+
+      expect(shouldPrepareLinuxSandbox()).toBe(true);
+    });
+
+    it('skips sudo mode', () => {
+      process.env.INPUT_SUDO = 'true';
+      process.env.RUNNER_OS = 'Linux';
+      process.env.RUNNER_ENVIRONMENT = 'github-hosted';
+
+      expect(shouldPrepareLinuxSandbox()).toBe(false);
+    });
+
+    it('skips self-hosted Linux runners', () => {
+      process.env.RUNNER_OS = 'Linux';
+      process.env.RUNNER_ENVIRONMENT = 'self-hosted';
+
+      expect(shouldPrepareLinuxSandbox()).toBe(false);
     });
   });
 
