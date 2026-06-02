@@ -74,7 +74,11 @@ const install = async () => {
 };
 
 export const shouldPrepareLinuxSandbox = (): boolean => {
-  return !inputs.sudo && process.env.RUNNER_OS === 'Linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted';
+  if (inputs.sudo) return false;
+  if (process.env.RUNNER_OS !== 'Linux') return false;
+  if (process.env.RUNNER_ENVIRONMENT !== 'github-hosted') return false;
+
+  return true;
 };
 
 const prepareLinuxSandbox = async () => {

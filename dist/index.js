@@ -91137,7 +91137,13 @@ const install = async () => {
     await (0, exec_1.runCommand)('npm', ['install', '-g', `@openai/codex@${CODEX_VERSION}`]);
 };
 const shouldPrepareLinuxSandbox = () => {
-    return !input_1.inputs.sudo && process.env.RUNNER_OS === 'Linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted';
+    if (input_1.inputs.sudo)
+        return false;
+    if (process.env.RUNNER_OS !== 'Linux')
+        return false;
+    if (process.env.RUNNER_ENVIRONMENT !== 'github-hosted')
+        return false;
+    return true;
 };
 exports.shouldPrepareLinuxSandbox = shouldPrepareLinuxSandbox;
 const prepareLinuxSandbox = async () => {
