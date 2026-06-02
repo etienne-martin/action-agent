@@ -31,7 +31,11 @@ const shouldResume = (): boolean => {
 
 export const buildConfig = (mcpServers: McpServerConfig[]) => {
   return mcpServers
-    .map(({ name, url }) => `[mcp_servers.${name}]\nurl = "${url}"`)
+    .map(({ name, url }) => [
+      `[mcp_servers.${name}]`,
+      `url = "${url}"`,
+      'default_tools_approval_mode = "approve"',
+    ].join('\n'))
     .join('\n\n');
 };
 
@@ -67,6 +71,21 @@ const persistSession = async () => {
 
 const install = async () => {
   await runCommand('npm', ['install', '-g', `@openai/codex@${CODEX_VERSION}`]);
+};
+
+export const shouldPrepareLinuxSandbox = (): boolean => {
+  if (inputs.sudo) return false;
+  if (process.env.RUNNER_OS !== 'Linux') return false;
+  if (process.env.RUNNER_ENVIRONMENT !== 'github-hosted') return false;
+
+  return true;
+};
+
+const prepareLinuxSandbox = async () => {
+  if (!shouldPrepareLinuxSandbox()) return;
+
+  await runCommand('sudo', ['sysctl', '-w', 'kernel.unprivileged_userns_clone=1']);
+  await runCommand('sudo', ['sysctl', '-w', 'kernel.apparmor_restrict_unprivileged_userns=0']);
 };
 
 export const resolveAuthStrategy = (): AuthStrategy => {
@@ -157,6 +176,7 @@ export const bootstrap = async ({ mcpServers }: BootstrapOptions): Promise<Boots
   const [resumed] = await Promise.all([
     restoreSession(),
     install(),
+    prepareLinuxSandbox(),
   ]);
   writeCodexConfig(mcpServers);
   await login();
