@@ -39,7 +39,6 @@ This makes iterative work practical: the agent remembers what it already covered
 
 - Session persistence requires the `actions: read` permission to download artifacts.
 - Artifact retention is controlled by your repo/org settings (see [Workflow Artifacts](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts)).
-- In non-`sudo` Codex mode on GitHub-hosted Linux runners, this action prepares Codex sandboxing by enabling unprivileged user namespaces and clearing Ubuntu's AppArmor user namespace gate for the rest of the job.
 
 ## Configuring the agent
 
@@ -86,6 +85,7 @@ Note: GitHub blocks `GITHUB_TOKEN` from updating workflow files in `.github/work
 - GitHub side effects are constrained by the workflow `permissions` you grant to `GITHUB_TOKEN`.
 - By default, `GITHUB_TOKEN` is scoped to the repository running the workflow: it cannot write to other repositories unless you supply a broader token with cross-repo access.
 - Agents run in `read-only` sandbox mode: they can read files but cannot write to disk or access the network, even from shell commands.
+- In non-`sudo` Codex mode on GitHub-hosted Linux runners, this action prepares Codex sandboxing by enabling unprivileged user namespaces and clearing Ubuntu's AppArmor user namespace gate for the rest of the job.
 - Use clear, scoped prompts and least-privilege permissions.
 - Agents can make mistakes, so scope triggers carefully and keep permissions minimal before enabling.
 - Keep humans in the loop for decisions that affect code, security, or policy.
