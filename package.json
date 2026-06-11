@@ -1,11 +1,12 @@
 {
   "name": "sudden-agent",
   "private": true,
-  "version": "1.13.0",
+  "packageManager": "pnpm@11.5.3",
+  "version": "1.13.1",
   "main": "dist/index.js",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "npm run typecheck && ncc build src/index.ts -o dist && cp src/PROMPT.md dist/PROMPT.md && cp src/PROMPT_RESUME.md dist/PROMPT_RESUME.md",
+    "build": "pnpm typecheck && ncc build src/index.ts -o dist && cp src/PROMPT.md dist/PROMPT.md && cp src/PROMPT_RESUME.md dist/PROMPT_RESUME.md",
     "test": "jest",
     "prepare": "husky"
   },
@@ -21,7 +22,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.17.30",
+    "@types/node": "^24.13.1",
     "@vercel/ncc": "^0.38.1",
     "husky": "^9.1.7",
     "jest": "^29.7.0",

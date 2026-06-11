@@ -21,26 +21,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
       - name: Verify dist is up to date
         run: |
           changed="$(git diff --name-only -- dist)"
           if [ -n "$changed" ]; then
-            echo "::error::dist/ is out of date. Run 'npm run build' and commit the updated dist/."
+            echo "::error::dist/ is out of date. Run 'pnpm build' and commit the updated dist/."
             echo "$changed"
             exit 1
           fi

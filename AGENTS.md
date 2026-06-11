@@ -3,6 +3,8 @@
 - Favor immutability, `const` over `let`.
 - Avoid unnecessary complexity.
 - Avoid over-engineering.
+- Prefer upgrading runtimes and tooling over pinning older versions for compatibility; only keep an old version when the upgrade is blocked and call out why.
+- Pin runtime and tooling majors explicitly; do not use floating aliases like `latest`, `current`, or `lts/*`.
 - Avoid configurable Terraform modules unless current usage requires it; no unused knobs.
 - Favor existing, battle-tested libraries and tooling over custom implementations unless the task explicitly demands bespoke behavior.
 - Group all constants at the top of the module or scope, but only when reused; inline single-use values and one-off helper consts.
