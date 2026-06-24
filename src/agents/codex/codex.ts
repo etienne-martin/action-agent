@@ -145,12 +145,8 @@ const persistAuthFileSecret = async () => {
   if (!update) return;
 
   try {
-    const target = await updateActionsSecret(update.secretName, update.authFile);
-    if (!target) {
-      warning(`Cannot update ${update.secretName} auth file secret: no repository or organization secret exists.`);
-      return;
-    }
-    info(`Updated ${update.secretName} ${target.kind} auth file secret`);
+    await updateActionsSecret(update.secretName, update.authFile);
+    info(`Updated ${update.secretName} auth file secret`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     warning(`Failed to update ${update.secretName} auth file secret: ${message}`);

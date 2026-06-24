@@ -90533,12 +90533,8 @@ const persistAuthFileSecret = async () => {
     if (!update)
         return;
     try {
-        const target = await (0, secrets_1.updateActionsSecret)(update.secretName, update.authFile);
-        if (!target) {
-            (0, core_1.warning)(`Cannot update ${update.secretName} auth file secret: no repository or organization secret exists.`);
-            return;
-        }
-        (0, core_1.info)(`Updated ${update.secretName} ${target.kind} auth file secret`);
+        await (0, secrets_1.updateActionsSecret)(update.secretName, update.authFile);
+        (0, core_1.info)(`Updated ${update.secretName} auth file secret`);
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -91199,7 +91195,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateActionsSecret = exports.getActionsSecretTarget = exports.updateRepoSecret = exports.encryptSecret = exports.CODEX_AUTH_SECRET_NAME = void 0;
+exports.updateActionsSecret = exports.updateRepoSecret = exports.encryptSecret = exports.CODEX_AUTH_SECRET_NAME = void 0;
 const libsodium_wrappers_1 = __importDefault(__nccwpck_require__(31707));
 const github_1 = __nccwpck_require__(84903);
 const octokit_1 = __nccwpck_require__(64517);
@@ -91246,14 +91242,13 @@ const getActionsSecretTarget = async (name) => {
     const { data } = await octokit.rest.actions.getOrgSecret({ org: owner, secret_name: name });
     return { kind: 'org', name, visibility: data.visibility };
 };
-exports.getActionsSecretTarget = getActionsSecretTarget;
 const updateActionsSecret = async (name, value) => {
-    const target = await (0, exports.getActionsSecretTarget)(name);
+    const target = await getActionsSecretTarget(name);
     if (!target)
-        return undefined;
+        throw new Error('no repository or organization secret exists');
     if (target.kind === 'repo') {
         await (0, exports.updateRepoSecret)(target.name, value);
-        return target;
+        return;
     }
     const { owner } = github_1.context.repo;
     const octokit = (0, octokit_1.getOctokit)();
@@ -91273,7 +91268,7 @@ const updateActionsSecret = async (name, value) => {
             visibility: target.visibility,
             selected_repository_ids: repositories.map((repository) => repository.id),
         });
-        return target;
+        return;
     }
     await octokit.rest.actions.createOrUpdateOrgSecret({
         org: owner,
@@ -91282,7 +91277,6 @@ const updateActionsSecret = async (name, value) => {
         key_id: data.key_id,
         visibility: target.visibility,
     });
-    return target;
 };
 exports.updateActionsSecret = updateActionsSecret;
 

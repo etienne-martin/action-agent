@@ -5,12 +5,6 @@ import { isNotFoundError } from './error';
 
 export const CODEX_AUTH_SECRET_NAME = 'CODEX_AUTH_JSON';
 
-type OrgSecretVisibility = 'all' | 'private' | 'selected';
-
-type ActionsSecretTarget =
-  | { kind: 'repo'; name: string }
-  | { kind: 'org'; name: string; visibility: OrgSecretVisibility };
-
 export const encryptSecret = async (value: string, publicKey: string): Promise<string> => {
   await sodium.ready;
 
@@ -33,7 +27,13 @@ export const updateRepoSecret = async (name: string, value: string): Promise<voi
   });
 };
 
-export const getActionsSecretTarget = async (name: string): Promise<ActionsSecretTarget | undefined> => {
+const getActionsSecretTarget = async (
+  name: string,
+): Promise<
+  | { kind: 'repo'; name: string }
+  | { kind: 'org'; name: string; visibility: 'all' | 'private' | 'selected' }
+  | undefined
+> => {
   const { owner, repo } = context.repo;
   const octokit = getOctokit();
 
@@ -59,12 +59,12 @@ export const getActionsSecretTarget = async (name: string): Promise<ActionsSecre
 export const updateActionsSecret = async (
   name: string,
   value: string,
-): Promise<ActionsSecretTarget | undefined> => {
+): Promise<void> => {
   const target = await getActionsSecretTarget(name);
-  if (!target) return undefined;
+  if (!target) throw new Error('no repository or organization secret exists');
   if (target.kind === 'repo') {
     await updateRepoSecret(target.name, value);
-    return target;
+    return;
   }
 
   const { owner } = context.repo;
@@ -87,7 +87,7 @@ export const updateActionsSecret = async (
       visibility: target.visibility,
       selected_repository_ids: repositories.map((repository) => repository.id),
     });
-    return target;
+    return;
   }
 
   await octokit.rest.actions.createOrUpdateOrgSecret({
@@ -97,5 +97,4 @@ export const updateActionsSecret = async (
     key_id: data.key_id,
     visibility: target.visibility,
   });
-  return target;
 };

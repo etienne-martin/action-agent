@@ -198,10 +198,12 @@ describe('github secrets', () => {
       });
     });
 
-    it('skips missing repo and org secrets', async () => {
+    it('throws when repo and org secrets are missing', async () => {
       getRepoSecretMock.mockRejectedValue({ status: 404 });
 
-      await expect(updateActionsSecret('CODEX_AUTH_JSON', 'secret-value')).resolves.toBeUndefined();
+      await expect(updateActionsSecret('CODEX_AUTH_JSON', 'secret-value')).rejects.toThrow(
+        'no repository or organization secret exists',
+      );
 
       expect(createOrUpdateRepoSecretMock).not.toHaveBeenCalled();
       expect(createOrUpdateOrgSecretMock).not.toHaveBeenCalled();
