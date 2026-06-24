@@ -90428,15 +90428,14 @@ const shouldResume = () => {
         return false;
     return Boolean(github_1.context.payload.issue || github_1.context.payload.pull_request);
 };
-const buildConfig = (mcpServers) => {
-    return mcpServers
-        .map(({ name, url }) => [
+const buildConfig = (mcpServers) => [
+    'cli_auth_credentials_store = "file"',
+    ...mcpServers.map(({ name, url }) => [
         `[mcp_servers.${name}]`,
         `url = "${url}"`,
         'default_tools_approval_mode = "approve"',
-    ].join('\n'))
-        .join('\n\n');
-};
+    ].join('\n')),
+].join('\n\n');
 exports.buildConfig = buildConfig;
 const writeCodexConfig = (mcpServers) => {
     ensureDir(CODEX_DIR);
@@ -90532,8 +90531,10 @@ const persistAuthFileSecret = async () => {
         return;
     if (!secretName)
         return;
-    if (!fs_1.default.existsSync(CODEX_AUTH_PATH))
+    if (!fs_1.default.existsSync(CODEX_AUTH_PATH)) {
+        (0, core_1.warning)(`Cannot update ${secretName} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
         return;
+    }
     const update = (0, exports.getAuthFileSecretUpdate)(auth.authFile, secretName, fs_1.default.readFileSync(CODEX_AUTH_PATH, 'utf8'));
     if (!update)
         return;

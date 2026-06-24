@@ -29,15 +29,14 @@ const shouldResume = (): boolean => {
   return Boolean(context.payload.issue || context.payload.pull_request);
 };
 
-export const buildConfig = (mcpServers: McpServerConfig[]) => {
-  return mcpServers
-    .map(({ name, url }) => [
-      `[mcp_servers.${name}]`,
-      `url = "${url}"`,
-      'default_tools_approval_mode = "approve"',
-    ].join('\n'))
-    .join('\n\n');
-};
+export const buildConfig = (mcpServers: McpServerConfig[]) => [
+  'cli_auth_credentials_store = "file"',
+  ...mcpServers.map(({ name, url }) => [
+    `[mcp_servers.${name}]`,
+    `url = "${url}"`,
+    'default_tools_approval_mode = "approve"',
+  ].join('\n')),
+].join('\n\n');
 
 const writeCodexConfig = (mcpServers: McpServerConfig[]) => {
   ensureDir(CODEX_DIR);
@@ -138,7 +137,10 @@ const persistAuthFileSecret = async () => {
 
   if (auth.kind !== 'auth_file') return;
   if (!secretName) return;
-  if (!fs.existsSync(CODEX_AUTH_PATH)) return;
+  if (!fs.existsSync(CODEX_AUTH_PATH)) {
+    warning(`Cannot update ${secretName} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
+    return;
+  }
 
   const update = getAuthFileSecretUpdate(
     auth.authFile,

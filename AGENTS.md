@@ -10,6 +10,7 @@
 - Group all constants at the top of the module or scope, but only when reused; inline single-use values and one-off helper consts.
 - If a value is used once (e.g., base objects for spreads), inline it unless reuse is needed.
 - Avoid duplication and keep sources of truth single to reduce maintenance overhead.
+- When updating the Codex CLI version, update both `CODEX_VERSION` in `src/agents/codex/codex.ts` and `scripts/bootstrap-codex-auth.sh`.
 - Avoid defensive code; write only what requirements or evidence justify.
 - Avoid scope creep; no extra changes or state tweaks unless required or asked.
 - When changing behavior, check for existing tests covering it; add or update tests to cover the new behavior if missing.

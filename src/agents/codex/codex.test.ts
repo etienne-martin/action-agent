@@ -17,6 +17,8 @@ describe('agent codex', () => {
 
       expect(config).toBe(
         [
+          'cli_auth_credentials_store = "file"',
+          '',
           '[mcp_servers.github]',
           'url = "http://localhost:1234/mcp"',
           'default_tools_approval_mode = "approve"',
