@@ -15,10 +15,6 @@ inputs:
     description: Agent auth file content (agent-specific)
     required: false
     default: ""
-  agent_auth_file_secret_name:
-    description: GitHub Actions secret name to update when the agent auth file refreshes
-    required: false
-    default: ""
   github_token:
     description: GitHub token used by the action (defaults to the workflow token)
     required: false

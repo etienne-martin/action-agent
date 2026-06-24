@@ -10,7 +10,7 @@ import { isPermissionError } from '../../github/error';
 import { info, warning } from '@actions/core';
 import { BootstrapOptions, BootstrapResult } from '../../agent';
 import type { McpServerConfig } from '../../mcp';
-import { updateRepoSecret } from '../../github/secrets';
+import { CODEX_AUTH_SECRET_NAME, updateActionsSecret } from '../../github/secrets';
 
 type AuthStrategy =
   | { kind: 'api_key'; apiKey: string }
@@ -104,18 +104,15 @@ export const hasAuthFileChanged = (initialAuthFile: string, currentAuthFile: str
 
 export const getAuthFileSecretUpdate = (
   initialAuthFile: string,
-  secretName: string | undefined,
   currentAuthFile: string,
 ): { authFile: string; secretName: string } | undefined => {
-  const trimmedSecretName = secretName?.trim();
   const trimmedAuthFile = currentAuthFile.trim();
 
-  if (!trimmedSecretName) return undefined;
   if (!hasAuthFileChanged(initialAuthFile, trimmedAuthFile)) return undefined;
 
   return {
     authFile: trimmedAuthFile,
-    secretName: trimmedSecretName,
+    secretName: CODEX_AUTH_SECRET_NAME,
   };
 };
 
@@ -133,25 +130,22 @@ const login = async () => {
 
 const persistAuthFileSecret = async () => {
   const auth = resolveAuthStrategy();
-  const secretName = inputs.agentAuthFileSecretName?.trim();
 
   if (auth.kind !== 'auth_file') return;
-  if (!secretName) return;
   if (!fs.existsSync(CODEX_AUTH_PATH)) {
-    warning(`Cannot update ${secretName} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
+    warning(`Cannot update ${CODEX_AUTH_SECRET_NAME} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
     return;
   }
 
   const update = getAuthFileSecretUpdate(
     auth.authFile,
-    secretName,
     fs.readFileSync(CODEX_AUTH_PATH, 'utf8'),
   );
 
   if (!update) return;
 
   try {
-    await updateRepoSecret(update.secretName, update.authFile);
+    await updateActionsSecret(update.secretName, update.authFile);
     info(`Updated ${update.secretName} auth file secret`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
