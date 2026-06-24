@@ -52,6 +52,8 @@ Use org-level settings for reuse across repos, or repo-level settings for a sing
     ...
 ```
 
+Refresh writeback requires `agent_auth_file_secret_name`, `github_token`, and `permission-secrets: write`. The action writes changed auth files back as repository secrets. If the run initially reads an organization secret, writeback creates or updates a repository secret with the same name for that repository.
+
 Use a separate Codex `auth.json` for this GitHub Actions secret. Running `codex logout` with the same file revokes its refresh token and invalidates `CODEX_AUTH_JSON`.
 
 Create that separate file locally without touching your normal `~/.codex` login:

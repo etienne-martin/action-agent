@@ -58,6 +58,19 @@ For the default agent (`codex`), `agent_auth_file` can be used to inject Codex's
 
 Set `agent_auth_file_secret_name` with `agent_auth_file` to update the repository secret after Codex refreshes `auth.json`. `agent_auth_file_secret_name` can only be used with a [GitHub App token](github-app/README.md) configured with `permission-secrets: write`.
 
+Auth file refresh works like this:
+
+- The workflow passes `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`.
+- The action writes that value to Codex's `~/.codex/auth.json`.
+- Codex may refresh `auth.json` during the run.
+- After the run, the action updates the repository secret named by `agent_auth_file_secret_name` when `auth.json` changed.
+
+Requirements for refresh writeback:
+
+- `agent_auth_file_secret_name` must be set to the secret name, for example `CODEX_AUTH_JSON`.
+- `github_token` must be a GitHub App token with `permission-secrets: write`; the default `GITHUB_TOKEN` cannot update secrets.
+- The secret is written back as a repository secret. If the run initially reads an organization secret, writeback creates or updates a repository secret with the same name for that repository.
+
 Use a separate Codex auth file for this GitHub Actions secret. If you keep using the same copied `auth.json` locally, local refreshes can invalidate the secret. Running `codex logout` with that auth file revokes its refresh token.
 
 To create a separate Codex auth file locally without touching your normal `~/.codex` login:
