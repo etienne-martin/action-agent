@@ -7,9 +7,6 @@ export const inputs = {
   get agentAuthFile(): string | undefined {
     return getInput('agent_auth_file') || undefined;
   },
-  get agentAuthFileSecretName(): string | undefined {
-    return getInput('agent_auth_file_secret_name') || undefined;
-  },
   get githubToken(): string {
     const token = getInput('github_token') || inputs.workflowGithubToken;
 

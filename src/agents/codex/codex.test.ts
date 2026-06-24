@@ -173,18 +173,14 @@ describe('agent codex', () => {
 
   describe('getAuthFileSecretUpdate', () => {
     it('returns update when auth file changed', () => {
-      expect(getAuthFileSecretUpdate('{ "ok": true }', ' CODEX_AUTH_JSON ', '{ "ok": false }\n')).toEqual({
+      expect(getAuthFileSecretUpdate('{ "ok": true }', '{ "ok": false }\n')).toEqual({
         authFile: '{ "ok": false }',
         secretName: 'CODEX_AUTH_JSON',
       });
     });
 
     it('skips unchanged auth file', () => {
-      expect(getAuthFileSecretUpdate('{ "ok": true }', 'CODEX_AUTH_JSON', '{ "ok": true }\n')).toBeUndefined();
-    });
-
-    it('skips missing secret name', () => {
-      expect(getAuthFileSecretUpdate('{ "ok": true }', undefined, '{ "ok": false }')).toBeUndefined();
+      expect(getAuthFileSecretUpdate('{ "ok": true }', '{ "ok": true }\n')).toBeUndefined();
     });
   });
 });

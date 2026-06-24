@@ -90502,16 +90502,13 @@ const hasAuthFileChanged = (initialAuthFile, currentAuthFile) => {
     return currentAuthFile.trim() !== initialAuthFile;
 };
 exports.hasAuthFileChanged = hasAuthFileChanged;
-const getAuthFileSecretUpdate = (initialAuthFile, secretName, currentAuthFile) => {
-    const trimmedSecretName = secretName?.trim();
+const getAuthFileSecretUpdate = (initialAuthFile, currentAuthFile) => {
     const trimmedAuthFile = currentAuthFile.trim();
-    if (!trimmedSecretName)
-        return undefined;
     if (!(0, exports.hasAuthFileChanged)(initialAuthFile, trimmedAuthFile))
         return undefined;
     return {
         authFile: trimmedAuthFile,
-        secretName: trimmedSecretName,
+        secretName: secrets_1.CODEX_AUTH_SECRET_NAME,
     };
 };
 exports.getAuthFileSecretUpdate = getAuthFileSecretUpdate;
@@ -90526,21 +90523,22 @@ const login = async () => {
 };
 const persistAuthFileSecret = async () => {
     const auth = (0, exports.resolveAuthStrategy)();
-    const secretName = input_1.inputs.agentAuthFileSecretName?.trim();
     if (auth.kind !== 'auth_file')
         return;
-    if (!secretName)
-        return;
     if (!fs_1.default.existsSync(CODEX_AUTH_PATH)) {
-        (0, core_1.warning)(`Cannot update ${secretName} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
+        (0, core_1.warning)(`Cannot update ${secrets_1.CODEX_AUTH_SECRET_NAME} auth file secret: ${CODEX_AUTH_PATH} does not exist.`);
         return;
     }
-    const update = (0, exports.getAuthFileSecretUpdate)(auth.authFile, secretName, fs_1.default.readFileSync(CODEX_AUTH_PATH, 'utf8'));
+    const update = (0, exports.getAuthFileSecretUpdate)(auth.authFile, fs_1.default.readFileSync(CODEX_AUTH_PATH, 'utf8'));
     if (!update)
         return;
     try {
-        await (0, secrets_1.updateRepoSecret)(update.secretName, update.authFile);
-        (0, core_1.info)(`Updated ${update.secretName} auth file secret`);
+        const target = await (0, secrets_1.updateActionsSecret)(update.secretName, update.authFile);
+        if (!target) {
+            (0, core_1.warning)(`Cannot update ${update.secretName} auth file secret: no repository or organization secret exists.`);
+            return;
+        }
+        (0, core_1.info)(`Updated ${update.secretName} ${target.kind} auth file secret`);
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -90936,9 +90934,6 @@ exports.inputs = {
     get agentAuthFile() {
         return (0, core_1.getInput)('agent_auth_file') || undefined;
     },
-    get agentAuthFileSecretName() {
-        return (0, core_1.getInput)('agent_auth_file_secret_name') || undefined;
-    },
     get githubToken() {
         const token = (0, core_1.getInput)('github_token') || exports.inputs.workflowGithubToken;
         if (!token) {
@@ -91204,10 +91199,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateRepoSecret = exports.encryptSecret = void 0;
+exports.updateActionsSecret = exports.getActionsSecretTarget = exports.updateRepoSecret = exports.encryptSecret = exports.CODEX_AUTH_SECRET_NAME = void 0;
 const libsodium_wrappers_1 = __importDefault(__nccwpck_require__(31707));
 const github_1 = __nccwpck_require__(84903);
 const octokit_1 = __nccwpck_require__(64517);
+const error_1 = __nccwpck_require__(83294);
+exports.CODEX_AUTH_SECRET_NAME = 'CODEX_AUTH_JSON';
 const encryptSecret = async (value, publicKey) => {
     await libsodium_wrappers_1.default.ready;
     return Buffer
@@ -91228,6 +91225,66 @@ const updateRepoSecret = async (name, value) => {
     });
 };
 exports.updateRepoSecret = updateRepoSecret;
+const getActionsSecretTarget = async (name) => {
+    const { owner, repo } = github_1.context.repo;
+    const octokit = (0, octokit_1.getOctokit)();
+    try {
+        await octokit.rest.actions.getRepoSecret({ owner, repo, secret_name: name });
+        return { kind: 'repo', name };
+    }
+    catch (error) {
+        if (!(0, error_1.isNotFoundError)(error))
+            throw error;
+    }
+    const orgSecrets = await octokit.paginate(octokit.rest.actions.listRepoOrganizationSecrets, {
+        owner,
+        repo,
+        per_page: 100,
+    });
+    if (!orgSecrets.some((secret) => secret.name === name))
+        return undefined;
+    const { data } = await octokit.rest.actions.getOrgSecret({ org: owner, secret_name: name });
+    return { kind: 'org', name, visibility: data.visibility };
+};
+exports.getActionsSecretTarget = getActionsSecretTarget;
+const updateActionsSecret = async (name, value) => {
+    const target = await (0, exports.getActionsSecretTarget)(name);
+    if (!target)
+        return undefined;
+    if (target.kind === 'repo') {
+        await (0, exports.updateRepoSecret)(target.name, value);
+        return target;
+    }
+    const { owner } = github_1.context.repo;
+    const octokit = (0, octokit_1.getOctokit)();
+    const { data } = await octokit.rest.actions.getOrgPublicKey({ org: owner });
+    const encryptedValue = await (0, exports.encryptSecret)(value, data.key);
+    if (target.visibility === 'selected') {
+        const repositories = await octokit.paginate(octokit.rest.actions.listSelectedReposForOrgSecret, {
+            org: owner,
+            secret_name: target.name,
+            per_page: 100,
+        });
+        await octokit.rest.actions.createOrUpdateOrgSecret({
+            org: owner,
+            secret_name: target.name,
+            encrypted_value: encryptedValue,
+            key_id: data.key_id,
+            visibility: target.visibility,
+            selected_repository_ids: repositories.map((repository) => repository.id),
+        });
+        return target;
+    }
+    await octokit.rest.actions.createOrUpdateOrgSecret({
+        org: owner,
+        secret_name: target.name,
+        encrypted_value: encryptedValue,
+        key_id: data.key_id,
+        visibility: target.visibility,
+    });
+    return target;
+};
+exports.updateActionsSecret = updateActionsSecret;
 
 
 /***/ }),

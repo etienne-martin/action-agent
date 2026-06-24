@@ -46,13 +46,12 @@ Use org-level settings for reuse across repos, or repo-level settings for a sing
 - uses: sudden-network/agent@v1
   with:
     agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-    agent_auth_file_secret_name: CODEX_AUTH_JSON
     github_token: ${{ steps.app_token.outputs.token }}
     github_token_actor: ${{ steps.app_token.outputs.app-slug }}[bot]
     ...
 ```
 
-Refresh writeback requires `agent_auth_file_secret_name`, `github_token`, and `permission-secrets: write`. The action writes changed auth files back as repository secrets. If the run initially reads an organization secret, writeback creates or updates a repository secret with the same name for that repository.
+Refresh writeback requires `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`, `github_token`, and `permission-secrets: write`. The action writes changed auth files back to an existing `CODEX_AUTH_JSON` repository secret, or to an existing `CODEX_AUTH_JSON` organization secret shared with the repository. Organization secret writeback requires the GitHub App to have the organization `secrets: write` permission.
 
 Use a separate Codex `auth.json` for this GitHub Actions secret. Running `codex logout` with the same file revokes its refresh token and invalidates `CODEX_AUTH_JSON`.
 
