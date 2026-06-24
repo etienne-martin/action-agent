@@ -51,3 +51,13 @@ Use org-level settings for reuse across repos, or repo-level settings for a sing
     github_token_actor: ${{ steps.app_token.outputs.app-slug }}[bot]
     ...
 ```
+
+Use a separate Codex `auth.json` for this GitHub Actions secret. Running `codex logout` with the same file revokes its refresh token and invalidates `CODEX_AUTH_JSON`.
+
+Create that separate file locally without touching your normal `~/.codex` login:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sudden-network/agent/main/scripts/bootstrap-codex-auth.sh | bash
+```
+
+The script uses Codex browser login with a fresh temporary `CODEX_HOME`. Paste the copied `auth.json` into the `CODEX_AUTH_JSON` GitHub Actions secret. Run it once per repo or org secret; do not reuse one generated `auth.json` across repos or orgs.
