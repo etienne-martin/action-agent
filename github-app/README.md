@@ -51,7 +51,23 @@ Use org-level settings for reuse across repos, or repo-level settings for a sing
     ...
 ```
 
-Refresh writeback requires `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`, `github_token`, and `permission-secrets: write`. The action writes changed auth files back to an existing `CODEX_AUTH_JSON` repository secret, or to an existing `CODEX_AUTH_JSON` organization secret shared with the repository. Organization secret writeback requires the GitHub App to have the organization `secrets: write` permission.
+## Use Codex with ChatGPT in Actions
+
+For the default agent (`codex`), `agent_auth_file` can inject Codex's `auth.json` so the CLI can use a ChatGPT subscription. Codex can update that login file during a run, so the action saves the updated file back into `CODEX_AUTH_JSON`.
+
+During a run:
+
+- The workflow passes `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`.
+- The action writes that value to Codex's `~/.codex/auth.json`.
+- Codex may update `auth.json`.
+- If `auth.json` changed, the action saves it back to the existing `CODEX_AUTH_JSON` repository or organization secret.
+
+Requirements:
+
+- The workflow must pass `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`. GitHub does not let actions read secret values by name.
+- `CODEX_AUTH_JSON` must already exist as a repository secret or an organization secret shared with the repository.
+- `github_token` must be a GitHub App token with `permission-secrets: write`; the default `GITHUB_TOKEN` cannot update secrets.
+- Updating an organization secret requires the GitHub App to have the organization `secrets: write` permission.
 
 Use a separate Codex `auth.json` for this GitHub Actions secret. Running `codex logout` with the same file revokes its refresh token and invalidates `CODEX_AUTH_JSON`.
 

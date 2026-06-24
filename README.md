@@ -55,29 +55,7 @@ Treat `agent_auth_file` like a password (it grants access to the underlying agen
 
 For the default agent (`codex`), `agent_auth_file` can be used to inject Codex's `auth.json` (from `~/.codex/auth.json`) so the CLI can use a ChatGPT subscription.
 
-Auth file refresh works like this:
-
-- The workflow passes `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`.
-- The action writes that value to Codex's `~/.codex/auth.json`.
-- Codex may refresh `auth.json` during the run.
-- After the run, the action updates the existing `CODEX_AUTH_JSON` repository or organization secret when `auth.json` changed.
-
-Requirements for refresh writeback:
-
-- The workflow must pass `agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}`. GitHub does not let actions read secret values by name.
-- `CODEX_AUTH_JSON` must already exist as a repository secret or an organization secret shared with the repository.
-- `github_token` must be a [GitHub App token](github-app/README.md) with `permission-secrets: write`; the default `GITHUB_TOKEN` cannot update secrets.
-- Organization secret writeback requires the GitHub App to have the organization `secrets: write` permission.
-
-Use a separate Codex auth file for this GitHub Actions secret. If you keep using the same copied `auth.json` locally, local refreshes can invalidate the secret. Running `codex logout` with that auth file revokes its refresh token.
-
-To create a separate Codex auth file locally without touching your normal `~/.codex` login:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/sudden-network/agent/main/scripts/bootstrap-codex-auth.sh | bash
-```
-
-The script runs Codex browser login in a fresh temporary `CODEX_HOME`, copies the resulting `auth.json` to your clipboard, and removes the temporary directory. Paste the clipboard into the `CODEX_AUTH_JSON` GitHub Actions secret. Run it once per repo or org secret; do not reuse one generated `auth.json` across repos or orgs.
+To use Codex with a ChatGPT subscription in GitHub Actions, store a dedicated `CODEX_AUTH_JSON` secret and use a [GitHub App token](github-app/README.md) so the action can save the updated Codex login after each run. See the [GitHub App setup](github-app/README.md) for the workflow setup and bootstrap command.
 
 ## Permissions
 
