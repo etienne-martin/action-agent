@@ -35,7 +35,7 @@ jobs:
         uses: ./
         with:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-          model: gpt-5.6-sol/xhigh/fast
+          model: gpt-5.5/xhigh/fast
           resume: true
           prompt: |
             Goals:
