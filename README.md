@@ -31,7 +31,7 @@ This makes iterative work practical: the agent remembers what it already covered
 | `agent_auth_file` | no | Agent auth file content (agent-specific). |
 | `github_token` | no | GitHub token used by the action (defaults to the workflow token). |
 | `github_token_actor` | no | Actor login for `github_token` when using a non-workflow token (e.g. `sudden-agent[bot]`). |
-| `model` | no | Agent model override (for Codex, append reasoning effort and service tier with `/`, e.g. `gpt-5.5/xhigh/fast`). |
+| `model` | no | Agent model override (for Codex, append reasoning effort and service tier with `/`, e.g. `gpt-5.6-sol/xhigh/fast`). |
 | `prompt` | no | Additional instructions for the agent. |
 | `resume` | no | Enable session persistence. Default: `false`. |
 | `sudo` | no | Disable sandbox; allow write + network access. Default: `false`. |
@@ -43,6 +43,18 @@ This makes iterative work practical: the agent remembers what it already covered
 
 - Use `prompt` for per-workflow instructions.
 - If you want repo-level instructions, add an [AGENTS.md](https://agents.md/) file and run this action after `actions/checkout` so the agent can read it.
+
+### Codex model selection
+
+Set `model` to `<model>[/<reasoning effort>[/<service tier>]]`. For example, use `gpt-5.6-sol/xhigh/fast` for Sol with extra-high reasoning and fast mode.
+
+Current GPT-5.6 choices are:
+
+- `gpt-5.6-sol` for complex work where capability matters most.
+- `gpt-5.6-terra` to balance capability and cost.
+- `gpt-5.6-luna` for efficient, high-volume work.
+
+See OpenAI's [model guidance](https://developers.openai.com/api/docs/guides/latest-model) for current model and reasoning options. Omit `model` to let Codex choose its default.
 
 ## Authentication
 
