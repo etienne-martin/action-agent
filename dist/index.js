@@ -90551,7 +90551,7 @@ const parseModelInput = (value) => {
     return {
         model: model || undefined,
         reasoningEffort: reasoningEffort || undefined,
-        serviceTier: serviceTier && serviceTier !== 'standard' ? serviceTier : undefined,
+        serviceTier: serviceTier || undefined,
     };
 };
 exports.parseModelInput = parseModelInput;

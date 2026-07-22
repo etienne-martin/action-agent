@@ -53,18 +53,10 @@ describe('agent codex', () => {
     });
 
     it('parses model, reasoning effort, and service tier', () => {
-      expect(parseModelInput('gpt-5.6-sol/ultra/fast')).toEqual({
-        model: 'gpt-5.6-sol',
-        reasoningEffort: 'ultra',
-        serviceTier: 'fast',
-      });
-    });
-
-    it('uses the standard service tier by default', () => {
-      expect(parseModelInput('gpt-5.6-sol/xhigh/standard')).toEqual({
+      expect(parseModelInput('gpt-5.6-sol/xhigh/fast')).toEqual({
         model: 'gpt-5.6-sol',
         reasoningEffort: 'xhigh',
-        serviceTier: undefined,
+        serviceTier: 'fast',
       });
     });
 

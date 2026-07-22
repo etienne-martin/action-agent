@@ -31,7 +31,7 @@ This makes iterative work practical: the agent remembers what it already covered
 | `agent_auth_file` | no | Agent auth file content (agent-specific). |
 | `github_token` | no | GitHub token used by the action (defaults to the workflow token). |
 | `github_token_actor` | no | Actor login for `github_token` when using a non-workflow token (e.g. `sudden-agent[bot]`). |
-| `model` | no | Codex `model[/reasoning][/speed]` override. Omit to let Codex choose. |
+| `model` | no | Agent model override (for Codex, append reasoning effort and service tier with `/`, e.g. `gpt-5.6-sol/xhigh/fast`). |
 | `prompt` | no | Additional instructions for the agent. |
 | `resume` | no | Enable session persistence. Default: `false`. |
 | `sudo` | no | Disable sandbox; allow write + network access. Default: `false`. |
@@ -46,20 +46,15 @@ This makes iterative work practical: the agent remembers what it already covered
 
 ### Codex model selection
 
-The `model` input accepts `model[/reasoning][/speed]`.
+Set `model` to `<model>[/<reasoning effort>[/<service tier>]]`. For example, use `gpt-5.6-sol/xhigh/fast` for Sol with extra-high reasoning and fast mode.
 
 Current GPT-5.6 choices are:
 
-- `gpt-5.6` as the GPT-5.6 family alias.
 - `gpt-5.6-sol` for complex work where capability matters most.
 - `gpt-5.6-terra` to balance capability and cost.
 - `gpt-5.6-luna` for efficient, high-volume work.
 
-Reasoning accepts `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`, when supported by the model. Codex labels `low` as Light and `xhigh` as Extra High in graphical clients.
-
-Speed accepts `standard` or `fast`. Standard is the default, so omit the last segment unless you want Fast mode. For example, `gpt-5.6-sol/xhigh/fast` passes `--model=gpt-5.6-sol`, `model_reasoning_effort=xhigh`, and `service_tier=fast` to the Codex CLI. `gpt-5.6-sol/xhigh` and `gpt-5.6-sol/xhigh/standard` both use Standard speed.
-
-See OpenAI's [model guidance](https://developers.openai.com/api/docs/guides/latest-model) for current model options.
+See OpenAI's [model guidance](https://developers.openai.com/api/docs/guides/latest-model) for current model and reasoning options. Omit `model` to let Codex choose its default.
 
 ## Authentication
 

@@ -32,7 +32,7 @@ inputs:
     required: false
     default: codex
   model:
-    description: Codex model[/reasoning][/speed] (speed is standard or fast)
+    description: Agent model override (for Codex, append reasoning effort and service tier with /, e.g. gpt-5.6-sol/xhigh/fast)
     required: false
     default: ""
   prompt:

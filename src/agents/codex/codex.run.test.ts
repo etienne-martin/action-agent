@@ -45,28 +45,15 @@ describe('codex run', () => {
   });
 
   it('passes model config', async () => {
-    inputsMock.model = 'gpt-5.6-sol/ultra/fast';
+    inputsMock.model = 'gpt-5.6-sol/xhigh/fast';
 
     await run('prompt');
 
     const args = runCommandMock.mock.calls[0][1];
     expect(args).toEqual(expect.arrayContaining([
       '--model=gpt-5.6-sol',
-      '--config=model_reasoning_effort=ultra',
+      '--config=model_reasoning_effort=xhigh',
       '--config=service_tier=fast',
     ]));
-  });
-
-  it('omits the standard service tier override', async () => {
-    inputsMock.model = 'gpt-5.6-sol/medium/standard';
-
-    await run('prompt');
-
-    const args = runCommandMock.mock.calls[0][1];
-    expect(args).toEqual(expect.arrayContaining([
-      '--model=gpt-5.6-sol',
-      '--config=model_reasoning_effort=medium',
-    ]));
-    expect(args).not.toContain('--config=service_tier=standard');
   });
 });
