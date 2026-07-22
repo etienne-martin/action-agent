@@ -19,7 +19,7 @@ jobs:
         uses: ./
         with:
           agent_auth_file: ${{ secrets.CODEX_AUTH_JSON }}
-          model: gpt-5.5/xhigh/fast
+          model: gpt-5.6-sol/xhigh/fast
           prompt: |
             Goal: on every push to main, move v{major} to the current commit. If package.json version changed, create v{version} and a GitHub release for it.
 
