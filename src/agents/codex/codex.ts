@@ -16,7 +16,7 @@ type AuthStrategy =
   | { kind: 'api_key'; apiKey: string }
   | { kind: 'auth_file'; authFile: string };
 
-const CODEX_VERSION = '0.136.0';
+const CODEX_VERSION = '0.145.0';
 const CODEX_DIR = path.join(os.homedir(), '.codex');
 const CODEX_CONFIG_PATH = path.join(CODEX_DIR, 'config.toml');
 const CODEX_AUTH_PATH = path.join(CODEX_DIR, 'auth.json');
@@ -164,7 +164,7 @@ export const parseModelInput = (value: string | undefined) => {
   return {
     model: model || undefined,
     reasoningEffort: reasoningEffort || undefined,
-    serviceTier: serviceTier || undefined,
+    serviceTier: serviceTier && serviceTier !== 'standard' ? serviceTier : undefined,
   };
 };
 

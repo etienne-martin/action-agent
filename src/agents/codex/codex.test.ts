@@ -53,10 +53,18 @@ describe('agent codex', () => {
     });
 
     it('parses model, reasoning effort, and service tier', () => {
-      expect(parseModelInput('gpt-5.5/xhigh/fast')).toEqual({
-        model: 'gpt-5.5',
-        reasoningEffort: 'xhigh',
+      expect(parseModelInput('gpt-5.6-sol/ultra/fast')).toEqual({
+        model: 'gpt-5.6-sol',
+        reasoningEffort: 'ultra',
         serviceTier: 'fast',
+      });
+    });
+
+    it('uses the standard service tier by default', () => {
+      expect(parseModelInput('gpt-5.6-sol/xhigh/standard')).toEqual({
+        model: 'gpt-5.6-sol',
+        reasoningEffort: 'xhigh',
+        serviceTier: undefined,
       });
     });
 
@@ -82,10 +90,10 @@ describe('agent codex', () => {
     });
 
     it('throws when service tier skips reasoning effort', () => {
-      expect(() => parseModelInput('gpt-5.5//fast')).toThrow(
+      expect(() => parseModelInput('gpt-5.6-sol//fast')).toThrow(
         'Invalid model input: service tier requires reasoning effort.',
       );
-      expect(() => parseModelInput('gpt-5.5/ /fast')).toThrow(
+      expect(() => parseModelInput('gpt-5.6-sol/ /fast')).toThrow(
         'Invalid model input: service tier requires reasoning effort.',
       );
     });

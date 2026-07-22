@@ -31,7 +31,7 @@ This makes iterative work practical: the agent remembers what it already covered
 | `agent_auth_file` | no | Agent auth file content (agent-specific). |
 | `github_token` | no | GitHub token used by the action (defaults to the workflow token). |
 | `github_token_actor` | no | Actor login for `github_token` when using a non-workflow token (e.g. `sudden-agent[bot]`). |
-| `model` | no | Agent model override (for Codex, append reasoning effort and service tier with `/`, e.g. `gpt-5.5/xhigh/fast`). |
+| `model` | no | Codex `model[/reasoning][/speed]` override. Default: `gpt-5.6-sol`. |
 | `prompt` | no | Additional instructions for the agent. |
 | `resume` | no | Enable session persistence. Default: `false`. |
 | `sudo` | no | Disable sandbox; allow write + network access. Default: `false`. |
@@ -43,6 +43,16 @@ This makes iterative work practical: the agent remembers what it already covered
 
 - Use `prompt` for per-workflow instructions.
 - If you want repo-level instructions, add an [AGENTS.md](https://agents.md/) file and run this action after `actions/checkout` so the agent can read it.
+
+### Codex model
+
+The `model` input accepts `model[/reasoning][/speed]`:
+
+- Models: `gpt-5.6`, `gpt-5.6-sol`, `gpt-5.6-terra`, or `gpt-5.6-luna`. The default is the flagship `gpt-5.6-sol`.
+- Reasoning: `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`, when supported by the model. Codex labels `low` as Light and `xhigh` as Extra High in graphical clients.
+- Speed: `standard` or `fast`. Standard is the default, so omit the last segment unless you want Fast mode.
+
+For example, `gpt-5.6-sol/xhigh/fast` passes `--model=gpt-5.6-sol`, `model_reasoning_effort=xhigh`, and `service_tier=fast` to the Codex CLI. `gpt-5.6-sol/xhigh` and `gpt-5.6-sol/xhigh/standard` both use Standard speed.
 
 ## Authentication
 
