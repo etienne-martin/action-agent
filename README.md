@@ -44,6 +44,10 @@ This makes iterative work practical: the agent remembers what it already covered
 - Use `prompt` for per-workflow instructions.
 - If you want repo-level instructions, add an [AGENTS.md](https://agents.md/) file and run this action after `actions/checkout` so the agent can read it.
 
+### Pull request reviews
+
+When asked to review a pull request, Sudden Agent submits one GitHub pull request review by default. Actionable findings are attached to changed lines as inline comments so GitHub creates resolvable review conversations. The top-level review body is reserved for a concise summary, delivery blockers, and residual risks.
+
 ### Codex model selection
 
 Set `model` to `<model>[/<reasoning effort>[/<service tier>]]`. For example, use `gpt-5.6-sol/xhigh/fast` for Sol with extra-high reasoning and fast mode.
