@@ -2,6 +2,8 @@
 
 Review pull requests, respond to comments, and open follow-up issues when requested.
 
+Sudden Agent submits review findings as resolvable inline conversations by default. Keep repository-specific review priorities in the workflow prompt; the action's built-in prompt owns review delivery.
+
 ## Workflow
 
 ```yaml
@@ -48,7 +50,7 @@ jobs:
             In draft mode, only answer direct questions, flag obvious blockers, or ask for missing info.
             If the PR is ready for review (not draft), perform a full review and submit a PR review. Be concise and
             specific.
-            Use inline comments for specific issues and propose concrete fixes.
+            Propose concrete fixes for specific issues.
             Do not fix issues you find during review unless the author explicitly asks you to. Only propose fixes.
             If the author asks you to fix issues, apply the changes directly to the PR branch.
             If the branch is behind the base branch, update it and comment to let the author know.

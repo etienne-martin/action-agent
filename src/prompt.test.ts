@@ -62,6 +62,11 @@ describe('buildPrompt', () => {
     expect(result).toContain('/tmp/event.json');
     expect(result).toContain('Extra instructions');
     expect(result).toContain('github-actions[bot]');
+    expect(result).toContain('POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews');
+    expect(result).toContain('so the review is submitted immediately instead of left pending');
+    expect(result).toContain('GitHub creates a resolvable review conversation');
+    expect(result).toContain('Include `body`, `path`, `line`, and `side`');
+    expect(result).toContain('Do not duplicate actionable finding details');
   });
 
   it('supports token context overrides', async () => {
