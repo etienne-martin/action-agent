@@ -2,7 +2,7 @@
   "name": "sudden-agent",
   "private": true,
   "packageManager": "pnpm@11.5.3",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "main": "dist/index.js",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
