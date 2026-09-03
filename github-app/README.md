@@ -86,14 +86,16 @@ gh auth login
 The helper:
 
 1. Lets you choose a repository Actions secret or organization Actions secret.
-2. Lists personal repositories and repositories owned by your organizations where you have admin access.
-3. Confirms whether it will create or replace `CODEX_AUTH_JSON`.
-4. Opens a fresh Codex browser login in a temporary `CODEX_HOME`.
-5. Passes `auth.json` to `gh secret set` from a permission-restricted temporary file, then deletes it.
+2. Lists repositories where you have admin access when repository selection is required.
+3. Lets you choose `selected`, `private`, or `all` visibility for an organization secret.
+4. Lets you choose one or more repositories when you select `selected` visibility.
+5. Shows existing visibility, then confirms the resulting access and create or replace action.
+6. Opens a fresh Codex browser login in a temporary `CODEX_HOME`.
+7. Passes `auth.json` to `gh secret set` from a permission-restricted temporary file, then deletes it.
 
-New organization secrets use selected-repository access. When replacing an organization secret, the helper preserves its current visibility and selected repositories. A repository secret named `CODEX_AUTH_JSON` takes precedence over an organization secret with the same name.
+For organization secrets, choose `Selected repositories`, `Private repositories`, or `All repositories`. Repository selection appears only for `Selected repositories`. Prefer selected access unless broader sharing is required. When replacing a secret, review the current and requested access before confirming. A repository secret named `CODEX_AUTH_JSON` takes precedence over an organization secret with the same name.
 
-Organization secret setup needs GitHub organization administration access. For a GitHub CLI OAuth login, add the required scope before running the helper:
+Organization secret setup needs GitHub organization owner access. For a GitHub CLI OAuth login, add the required scope before running the helper:
 
 ```bash
 gh auth refresh --scopes admin:org

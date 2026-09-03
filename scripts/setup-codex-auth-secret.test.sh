@@ -85,11 +85,6 @@ if [[ "$1" == "api" && "$2" == "--paginate" && "$3" == "user/memberships/orgs" ]
   exit 0
 fi
 
-if [[ "$1" == "api" && "$2" == "--paginate" && "$3" == "orgs/acme/actions/secrets/CODEX_AUTH_JSON/repositories" ]]; then
-  printf 'app\napi\n'
-  exit 0
-fi
-
 if [[ "$1" == "org" && "$2" == "list" ]]; then
   echo "acme"
   exit 0
@@ -101,7 +96,7 @@ if [[ "$1" == "repo" && "$2" == "list" ]]; then
   fi
   case "$3" in
     alice) printf 'alice/alpha\nalice/zeta\n' ;;
-    acme) printf 'acme/app\nacme/api\n' ;;
+    acme) printf 'acme/api\nacme/app\n' ;;
     *) exit 1 ;;
   esac
   exit 0
@@ -219,39 +214,99 @@ test_organization_repository_secret() {
   setup_run
   run_success '1\n2\n1\ny\n'
 
-  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--repo\tacme/app'
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--repo\tacme/api'
   assert_contains "$OUTPUT" "This creates CODEX_AUTH_JSON."
   assert_secret_was_uploaded
 }
 
 test_new_organization_secret() {
   setup_run
-  run_success '2\n1\n1\ny\n'
+  run_success '2\n1\n1\n0\n\n3\nx\n999999999999999999999999999999999999\n1, 2,1\ny\n'
 
-  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapp'
-  assert_contains "$OUTPUT" "selected repository: acme/app"
+  assert_contains "$GH_LOG" $'gh\tsecret\tlist\t--app\tactions\t--repo\tacme/api'
+  assert_contains "$GH_LOG" $'gh\tsecret\tlist\t--app\tactions\t--repo\tacme/app'
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapi,app'
+  assert_contains "$OUTPUT" "selected repositories: acme/api, acme/app"
+  assert_contains "$OUTPUT" "Choose one or more listed numbers separated by commas, or q."
   assert_secret_was_uploaded
 }
 
 test_existing_selected_organization_secret() {
   setup_run
   export TEST_ORG_VISIBILITY="selected"
-  run_success '2\n1\ny\n'
+  run_success '2\n1\n1\n2\ny\n'
 
-  assert_contains "$GH_LOG" $'gh\tapi\t--paginate\torgs/acme/actions/secrets/CODEX_AUTH_JSON/repositories'
-  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapp,api'
-  assert_contains "$OUTPUT" "access unchanged"
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapp'
+  assert_contains "$OUTPUT" "Current CODEX_AUTH_JSON visibility: selected."
+  assert_contains "$OUTPUT" "This replaces the existing CODEX_AUTH_JSON value and organization access configuration."
   assert_secret_was_uploaded
 }
 
-test_existing_private_organization_secret() {
+test_private_organization_secret_skips_repository_selection() {
   setup_run
-  export TEST_ORG_VISIBILITY="private"
-  run_success '2\n1\ny\n'
+  run_success '2\n1\n2\ny\n'
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tprivate'
-  assert_contains "$OUTPUT" "private visibility; access unchanged"
+  assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
+  assert_not_contains "$GH_LOG" $'--repos'
+  assert_contains "$OUTPUT" "organization acme (private repositories)"
   assert_secret_was_uploaded
+}
+
+test_existing_organization_secret_changes_visibility() {
+  setup_run
+  export TEST_ORG_VISIBILITY="private"
+  export TEST_EMPTY_REPOS="true"
+  run_success '2\n1\n3\ny\n'
+
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tall'
+  assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
+  assert_not_contains "$GH_LOG" $'--repos'
+  assert_contains "$OUTPUT" "Current CODEX_AUTH_JSON visibility: private."
+  assert_contains "$OUTPUT" "organization acme (all repositories)"
+  assert_contains "$OUTPUT" "This replaces the existing CODEX_AUTH_JSON value and organization access configuration."
+  assert_secret_was_uploaded
+}
+
+test_existing_all_organization_secret_can_change_to_private() {
+  setup_run
+  export TEST_ORG_VISIBILITY="all"
+  run_success '2\n1\n2\ny\n'
+
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tprivate'
+  assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
+  assert_not_contains "$GH_LOG" $'--repos'
+  assert_contains "$OUTPUT" "Current CODEX_AUTH_JSON visibility: all."
+  assert_contains "$OUTPUT" "organization acme (private repositories)"
+  assert_secret_was_uploaded
+}
+
+test_cancel_at_organization_visibility() {
+  setup_run
+  run_success '2\n1\nq\n'
+
+  [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after visibility cancellation."
+  assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
+  assert_contains "$OUTPUT" "Cancelled."
+}
+
+test_cancel_at_selected_repository_selection() {
+  setup_run
+  run_success '2\n1\n1\nq\n'
+
+  [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after repository selection cancellation."
+  assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
+  assert_contains "$OUTPUT" "Cancelled."
+}
+
+test_empty_selected_organization_repository_list() {
+  setup_run
+  export TEST_EMPTY_REPOS="true"
+  run_failure '2\n1\n1\n'
+
+  [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran without an eligible organization repository."
+  assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
+  assert_contains "$OUTPUT" "No repositories with admin access found for acme."
 }
 
 test_cancel_before_login() {
@@ -275,10 +330,10 @@ test_cancel_at_confirmation() {
 test_rejects_shadowed_organization_secret() {
   setup_run
   export TEST_REPO_SECRET_EXISTS="true"
-  run_failure '2\n1\n1\n'
+  run_failure '2\n1\n1\n1\n'
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran for a shadowed organization secret."
-  assert_contains "$OUTPUT" "Remove that repository secret before creating the organization secret."
+  assert_contains "$OUTPUT" "Remove that repository secret before using the organization secret there."
 }
 
 test_empty_repository_list() {
@@ -341,7 +396,12 @@ test_personal_repository_secret
 test_organization_repository_secret
 test_new_organization_secret
 test_existing_selected_organization_secret
-test_existing_private_organization_secret
+test_private_organization_secret_skips_repository_selection
+test_existing_organization_secret_changes_visibility
+test_existing_all_organization_secret_can_change_to_private
+test_cancel_at_organization_visibility
+test_cancel_at_selected_repository_selection
+test_empty_selected_organization_repository_list
 test_cancel_before_login
 test_cancel_at_confirmation
 test_rejects_shadowed_organization_secret
