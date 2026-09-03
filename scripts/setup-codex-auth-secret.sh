@@ -4,9 +4,15 @@ set +x
 umask 077
 
 SECRET_NAME="CODEX_AUTH_JSON"
+MENU_WINDOW_SIZE=10
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap-codex-auth.sh"
 AUTH_DIR=""
+MENU_ANSI="false"
+MENU_COLUMNS=80
+MENU_KEY=""
+MENU_ROWS=24
+MENU_SELECTED=()
 SELECTED=""
 SELECTED_VALUES=()
 TARGET_LABEL=""
@@ -29,102 +35,260 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
+read_menu_key() {
+  local key
+  local sequence
+
+  MENU_KEY=""
+  if ! IFS= read -r -s -n 1 key; then
+    return 1
+  fi
+  if [[ "$key" == $'\033' ]]; then
+    if IFS= read -r -s -n 2 -t 1 sequence; then
+      MENU_KEY="${key}${sequence}"
+    else
+      MENU_KEY="$key"
+    fi
+  else
+    MENU_KEY="$key"
+  fi
+}
+
+configure_menu_terminal() {
+  local terminal_size
+  local rows
+  local columns
+
+  MENU_ANSI="false"
+  MENU_COLUMNS=80
+  MENU_ROWS=24
+  if [[ -t 0 && -t 2 && "${TERM:-dumb}" != "dumb" ]]; then
+    MENU_ANSI="true"
+    if terminal_size="$(stty size <&0 2>/dev/null)"; then
+      rows="${terminal_size%% *}"
+      columns="${terminal_size##* }"
+      if [[ "$rows" =~ ^[0-9]+$ && "$columns" =~ ^[0-9]+$ ]] && \
+        ((rows > 0 && columns > 0)); then
+        MENU_ROWS="$rows"
+        MENU_COLUMNS="$columns"
+      fi
+    fi
+  fi
+}
+
+print_menu_line() {
+  local line="$1"
+  local maximum_width
+
+  if [[ "$MENU_ANSI" == "true" ]]; then
+    maximum_width=$((MENU_COLUMNS - 1))
+    [[ "$maximum_width" -gt 0 ]] || maximum_width=1
+    if [[ "${#line}" -gt "$maximum_width" ]]; then
+      if [[ "$maximum_width" -gt 3 ]]; then
+        line="${line:0:$((maximum_width - 3))}..."
+      else
+        line="${line:0:$maximum_width}"
+      fi
+    fi
+    printf '\r\033[2K%s\n' "$line" >&2
+  else
+    printf '%s\n' "$line" >&2
+  fi
+}
+
+render_menu() {
+  local mode="$1"
+  local cursor="$2"
+  local window_start="$3"
+  local window_size="$4"
+  local selected_count="$5"
+  shift 5
+  local options=("$@")
+  local index
+  local marker
+  local checkbox
+  local line
+
+  for ((index = window_start; index < window_start + window_size; index++)); do
+    marker=" "
+    [[ "$index" -ne "$cursor" ]] || marker=">"
+    if [[ "$mode" == "multiple" ]]; then
+      checkbox=" "
+      [[ "${MENU_SELECTED[$index]}" != "true" ]] || checkbox="x"
+      line="$marker [$checkbox] ${options[$index]}"
+    else
+      line="$marker ${options[$index]}"
+    fi
+    print_menu_line "$line"
+  done
+
+  if [[ "$mode" == "multiple" ]]; then
+    line="  Selected: $selected_count | $((cursor + 1))/${#options[@]}"
+  else
+    line="  $((cursor + 1))/${#options[@]}"
+  fi
+  print_menu_line "$line"
+}
+
+redraw_menu() {
+  local line_count="$1"
+  shift
+
+  [[ "$MENU_ANSI" == "true" ]] || return 0
+  printf '\033[%dA' "$line_count" >&2
+  render_menu "$@"
+}
+
 choose() {
   local prompt="$1"
   shift
   local options=("$@")
-  local choice
+  local cursor=0
+  local window_start=0
+  local window_size="${#options[@]}"
+  local maximum_window_size
+  local line_count
 
   [[ "${#options[@]}" -gt 0 ]] || die "No choices are available."
+  configure_menu_terminal
+  maximum_window_size="${#options[@]}"
+  if [[ "$MENU_ANSI" == "true" ]]; then
+    maximum_window_size="$MENU_WINDOW_SIZE"
+    if [[ "$MENU_ROWS" -le $((MENU_WINDOW_SIZE + 5)) ]]; then
+      maximum_window_size=$((MENU_ROWS - 5))
+      [[ "$maximum_window_size" -gt 0 ]] || maximum_window_size=1
+    fi
+  fi
+  if [[ "$window_size" -gt "$maximum_window_size" ]]; then
+    window_size="$maximum_window_size"
+  fi
+  line_count=$((window_size + 1))
 
   echo >&2
   echo "$prompt" >&2
-  PS3="> "
-  select choice in "${options[@]}"; do
-    case "$REPLY" in
+  echo "Use Up/Down arrows to move, Enter to choose, or q to cancel." >&2
+  render_menu "single" "$cursor" "$window_start" "$window_size" 0 "${options[@]}"
+
+  while true; do
+    read_menu_key || die "Input closed."
+    case "$MENU_KEY" in
+      $'\033[A'|$'\033OA')
+        if [[ "$cursor" -eq 0 ]]; then
+          cursor=$((${#options[@]} - 1))
+        else
+          cursor=$((cursor - 1))
+        fi
+        ;;
+      $'\033[B'|$'\033OB')
+        cursor=$(((cursor + 1) % ${#options[@]}))
+        ;;
+      ""|$'\r')
+        SELECTED="${options[$cursor]}"
+        return
+        ;;
       q|Q)
         echo "Cancelled." >&2
         exit 0
         ;;
+      *) continue ;;
     esac
 
-    if [[ -n "$choice" ]]; then
-      SELECTED="$choice"
-      return
+    if [[ "$cursor" -lt "$window_start" ]]; then
+      window_start="$cursor"
+    elif [[ "$cursor" -ge $((window_start + window_size)) ]]; then
+      window_start=$((cursor - window_size + 1))
     fi
-    echo "Choose a listed number or q." >&2
+    redraw_menu "$line_count" "single" "$cursor" "$window_start" "$window_size" 0 "${options[@]}"
   done
-
-  die "Input closed."
 }
 
 choose_multiple() {
   local prompt="$1"
   shift
   local options=("$@")
-  local choices=()
-  local input
-  local choice
-  local index
-  local maximum
-  local selected
-  local duplicate
-  local valid
+  local cursor=0
+  local window_start=0
+  local window_size="${#options[@]}"
+  local maximum_window_size
+  local selected_count=0
+  local line_count
   local i
 
   [[ "${#options[@]}" -gt 0 ]] || die "No choices are available."
-  maximum="${#options[@]}"
+  configure_menu_terminal
+  maximum_window_size="${#options[@]}"
+  if [[ "$MENU_ANSI" == "true" ]]; then
+    maximum_window_size="$MENU_WINDOW_SIZE"
+    if [[ "$MENU_ROWS" -le $((MENU_WINDOW_SIZE + 5)) ]]; then
+      maximum_window_size=$((MENU_ROWS - 5))
+      [[ "$maximum_window_size" -gt 0 ]] || maximum_window_size=1
+    fi
+  fi
+  if [[ "$window_size" -gt "$maximum_window_size" ]]; then
+    window_size="$maximum_window_size"
+  fi
+  line_count=$((window_size + 1))
+  MENU_SELECTED=()
+  for ((i = 0; i < ${#options[@]}; i++)); do
+    MENU_SELECTED+=("false")
+  done
+
+  echo >&2
+  echo "$prompt" >&2
+  echo "Use Up/Down arrows to move, Enter to choose one, Space to select multiple, or q to cancel." >&2
+  render_menu "multiple" "$cursor" "$window_start" "$window_size" "$selected_count" "${options[@]}"
 
   while true; do
-    echo >&2
-    echo "$prompt" >&2
-    for ((i = 0; i < ${#options[@]}; i++)); do
-      printf '%d) %s\n' "$((i + 1))" "${options[$i]}" >&2
-    done
-    printf '> ' >&2
-    IFS= read -r input || die "Input closed."
-
-    case "$input" in
+    read_menu_key || die "Input closed."
+    case "$MENU_KEY" in
+      $'\033[A'|$'\033OA')
+        if [[ "$cursor" -eq 0 ]]; then
+          cursor=$((${#options[@]} - 1))
+        else
+          cursor=$((cursor - 1))
+        fi
+        ;;
+      $'\033[B'|$'\033OB')
+        cursor=$(((cursor + 1) % ${#options[@]}))
+        ;;
+      " ")
+        if [[ "${MENU_SELECTED[$cursor]}" == "true" ]]; then
+          MENU_SELECTED[$cursor]="false"
+          selected_count=$((selected_count - 1))
+        else
+          MENU_SELECTED[$cursor]="true"
+          selected_count=$((selected_count + 1))
+        fi
+        ;;
+      ""|$'\r')
+        if [[ "$selected_count" -eq 0 ]]; then
+          MENU_SELECTED[$cursor]="true"
+          selected_count=1
+          redraw_menu "$line_count" "multiple" "$cursor" "$window_start" "$window_size" \
+            "$selected_count" "${options[@]}"
+        fi
+        SELECTED_VALUES=()
+        for ((i = 0; i < ${#options[@]}; i++)); do
+          if [[ "${MENU_SELECTED[$i]}" == "true" ]]; then
+            SELECTED_VALUES+=("${options[$i]}")
+          fi
+        done
+        return
+        ;;
       q|Q)
         echo "Cancelled." >&2
         exit 0
         ;;
+      *) continue ;;
     esac
 
-    SELECTED_VALUES=()
-    valid="true"
-    choices=()
-    IFS=',' read -r -a choices <<< "$input"
-    if [[ "${#choices[@]}" -gt 0 ]]; then
-      for choice in "${choices[@]}"; do
-        choice="${choice#"${choice%%[![:space:]]*}"}"
-        choice="${choice%"${choice##*[![:space:]]}"}"
-        if [[ ! "$choice" =~ ^[1-9][0-9]*$ ]] || \
-          ((${#choice} > ${#maximum})) || ((choice > maximum)); then
-          valid="false"
-          break
-        fi
-
-        index=$((choice - 1))
-        duplicate="false"
-        if [[ "${#SELECTED_VALUES[@]}" -gt 0 ]]; then
-          for selected in "${SELECTED_VALUES[@]}"; do
-            if [[ "$selected" == "${options[$index]}" ]]; then
-              duplicate="true"
-              break
-            fi
-          done
-        fi
-        if [[ "$duplicate" == "false" ]]; then
-          SELECTED_VALUES+=("${options[$index]}")
-        fi
-      done
+    if [[ "$cursor" -lt "$window_start" ]]; then
+      window_start="$cursor"
+    elif [[ "$cursor" -ge $((window_start + window_size)) ]]; then
+      window_start=$((cursor - window_size + 1))
     fi
-
-    if [[ "$valid" == "true" && "${#SELECTED_VALUES[@]}" -gt 0 ]]; then
-      return
-    fi
-    echo "Choose one or more listed numbers separated by commas, or q." >&2
+    redraw_menu "$line_count" "multiple" "$cursor" "$window_start" "$window_size" \
+      "$selected_count" "${options[@]}"
   done
 }
 
@@ -242,7 +406,7 @@ select_organization_target() {
     done <<< "$repositories_output"
 
     [[ "${#repositories[@]}" -gt 0 ]] || die "No repositories with admin access found for $organization."
-    choose_multiple "Choose repositories that can use this organization secret (comma-separated numbers)." "${repositories[@]}"
+    choose_multiple "Choose repositories that can use this organization secret." "${repositories[@]}"
 
     for repository in "${SELECTED_VALUES[@]}"; do
       if secret_exists --repo "$repository"; then

@@ -15,6 +15,8 @@ TEMP_DIR=""
 CLIPBOARD_LOG=""
 CLIPBOARD_OUTPUT=""
 OUTPUT=""
+ARROW_DOWN='\033[B'
+ARROW_UP='\033[A'
 
 cleanup() {
   rm -rf -- "$TEST_ROOT"
@@ -203,38 +205,44 @@ assert_secret_was_uploaded() {
 test_personal_repository_secret() {
   setup_run
   export TEST_REPO_SECRET_EXISTS="true"
-  run_success '1\n1\n1\ny\n'
+  run_success '\n\n\ny\n'
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--repo\talice/alpha'
   assert_contains "$OUTPUT" "This replaces the existing CODEX_AUTH_JSON value."
+  assert_contains "$OUTPUT" "Use Up/Down arrows to move, Enter to choose, or q to cancel."
+  assert_not_contains "$OUTPUT" $'\033['
   assert_secret_was_uploaded
 }
 
 test_organization_repository_secret() {
   setup_run
-  run_success '1\n2\n1\ny\n'
+  run_success "\n${ARROW_DOWN}\n${ARROW_DOWN}\ny\n"
 
-  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--repo\tacme/api'
+  assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--repo\tacme/app'
   assert_contains "$OUTPUT" "This creates CODEX_AUTH_JSON."
   assert_secret_was_uploaded
 }
 
 test_new_organization_secret() {
   setup_run
-  run_success '2\n1\n1\n0\n\n3\nx\n999999999999999999999999999999999999\n1, 2,1\ny\n'
+  run_success "1${ARROW_DOWN}\n\n\n ${ARROW_DOWN} \ny\n"
 
   assert_contains "$GH_LOG" $'gh\tsecret\tlist\t--app\tactions\t--repo\tacme/api'
   assert_contains "$GH_LOG" $'gh\tsecret\tlist\t--app\tactions\t--repo\tacme/app'
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapi,app'
   assert_contains "$OUTPUT" "selected repositories: acme/api, acme/app"
-  assert_contains "$OUTPUT" "Choose one or more listed numbers separated by commas, or q."
+  assert_contains "$OUTPUT" "Use Up/Down arrows to move, Enter to choose one, Space to select multiple, or q to cancel."
+  assert_contains "$OUTPUT" "Selected: 0 | 1/2"
+  assert_not_contains "$OUTPUT" "Choose a listed number"
+  assert_not_contains "$OUTPUT" "comma-separated numbers"
+  assert_not_contains "$OUTPUT" "1) Repository Actions secret"
   assert_secret_was_uploaded
 }
 
 test_existing_selected_organization_secret() {
   setup_run
   export TEST_ORG_VISIBILITY="selected"
-  run_success '2\n1\n1\n2\ny\n'
+  run_success "${ARROW_DOWN}\n\n\n${ARROW_DOWN}\ny\n"
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tselected\t--repos\tapp'
   assert_contains "$OUTPUT" "Current CODEX_AUTH_JSON visibility: selected."
@@ -244,7 +252,7 @@ test_existing_selected_organization_secret() {
 
 test_private_organization_secret_skips_repository_selection() {
   setup_run
-  run_success '2\n1\n2\ny\n'
+  run_success "${ARROW_DOWN}\n\n${ARROW_DOWN}\ny\n"
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tprivate'
   assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
@@ -257,7 +265,7 @@ test_existing_organization_secret_changes_visibility() {
   setup_run
   export TEST_ORG_VISIBILITY="private"
   export TEST_EMPTY_REPOS="true"
-  run_success '2\n1\n3\ny\n'
+  run_success "${ARROW_DOWN}\n\n${ARROW_UP}\ny\n"
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tall'
   assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
@@ -271,7 +279,7 @@ test_existing_organization_secret_changes_visibility() {
 test_existing_all_organization_secret_can_change_to_private() {
   setup_run
   export TEST_ORG_VISIBILITY="all"
-  run_success '2\n1\n2\ny\n'
+  run_success "${ARROW_DOWN}\n\n${ARROW_DOWN}\ny\n"
 
   assert_contains "$GH_LOG" $'gh\tsecret\tset\tCODEX_AUTH_JSON\t--app\tactions\t--org\tacme\t--visibility\tprivate'
   assert_not_contains "$GH_LOG" $'gh\trepo\tlist\tacme'
@@ -283,7 +291,7 @@ test_existing_all_organization_secret_can_change_to_private() {
 
 test_cancel_at_organization_visibility() {
   setup_run
-  run_success '2\n1\nq\n'
+  run_success "${ARROW_DOWN}\n\nq"
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after visibility cancellation."
   assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
@@ -292,7 +300,7 @@ test_cancel_at_organization_visibility() {
 
 test_cancel_at_selected_repository_selection() {
   setup_run
-  run_success '2\n1\n1\nq\n'
+  run_success "${ARROW_DOWN}\n\n\n q"
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after repository selection cancellation."
   assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
@@ -302,7 +310,7 @@ test_cancel_at_selected_repository_selection() {
 test_empty_selected_organization_repository_list() {
   setup_run
   export TEST_EMPTY_REPOS="true"
-  run_failure '2\n1\n1\n'
+  run_failure "${ARROW_DOWN}\n\n\n"
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran without an eligible organization repository."
   assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
@@ -311,7 +319,7 @@ test_empty_selected_organization_repository_list() {
 
 test_cancel_before_login() {
   setup_run
-  run_success 'q\n'
+  run_success 'q'
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after cancellation."
   assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
@@ -320,7 +328,7 @@ test_cancel_before_login() {
 
 test_cancel_at_confirmation() {
   setup_run
-  run_success '1\n1\n1\nn\n'
+  run_success '\n\n\nn\n'
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran after cancellation."
   assert_not_contains "$GH_LOG" $'gh\tsecret\tset'
@@ -330,7 +338,7 @@ test_cancel_at_confirmation() {
 test_rejects_shadowed_organization_secret() {
   setup_run
   export TEST_REPO_SECRET_EXISTS="true"
-  run_failure '2\n1\n1\n1\n'
+  run_failure "${ARROW_DOWN}\n\n\n\n"
 
   [[ ! -s "$NPX_LOG" ]] || fail "Codex login ran for a shadowed organization secret."
   assert_contains "$OUTPUT" "Remove that repository secret before using the organization secret there."
@@ -339,7 +347,7 @@ test_rejects_shadowed_organization_secret() {
 test_empty_repository_list() {
   setup_run
   export TEST_EMPTY_REPOS="true"
-  run_failure '1\n1\n'
+  run_failure '\n\n'
 
   assert_contains "$OUTPUT" "No repositories with admin access found for alice."
   assert_not_contains "$OUTPUT" "unbound variable"
@@ -348,7 +356,7 @@ test_empty_repository_list() {
 test_empty_organization_list() {
   setup_run
   export TEST_EMPTY_ORGS="true"
-  run_failure '2\n'
+  run_failure "${ARROW_DOWN}\n"
 
   assert_contains "$OUTPUT" "No organizations with owner access found."
   assert_not_contains "$OUTPUT" "unbound variable"
@@ -368,7 +376,7 @@ test_failed_github_auth() {
 test_failed_secret_upload_cleans_auth_file() {
   setup_run
   export TEST_GH_SET_FAIL="true"
-  run_failure '1\n1\n1\ny\n'
+  run_failure '\n\n\ny\n'
 
   [[ -f "$SECRET_INPUT" ]] || fail "The failed upload did not receive the auth file."
   if [[ -n "$(find "$TEMP_DIR" -mindepth 1 -print -quit)" ]]; then

@@ -93,6 +93,8 @@ The helper:
 6. Opens a fresh Codex browser login in a temporary `CODEX_HOME`.
 7. Passes `auth.json` to `gh secret set` from a permission-restricted temporary file, then deletes it.
 
+Use the Up and Down arrow keys and press Enter in each single-choice menu. In the selected-repository menu, press Enter to choose one repository. Press Space to select multiple repositories, then press Enter to continue. Press `q` to cancel.
+
 For organization secrets, choose `Selected repositories`, `Private repositories`, or `All repositories`. Repository selection appears only for `Selected repositories`. Prefer selected access unless broader sharing is required. When replacing a secret, review the current and requested access before confirming. A repository secret named `CODEX_AUTH_JSON` takes precedence over an organization secret with the same name.
 
 Organization secret setup needs GitHub organization owner access. For a GitHub CLI OAuth login, add the required scope before running the helper:
